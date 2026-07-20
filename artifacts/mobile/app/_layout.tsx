@@ -11,21 +11,47 @@ import {
   Inter_700Bold,
   useFonts,
 } from '@expo-google-fonts/inter';
-import { Stack } from 'expo-router';
+import { Stack, useRouter, useSegments } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
-import { AuthProvider } from '@/context/AuthContext';
+import { AuthProvider, useAuth } from '@/context/AuthContext';
 
 SplashScreen.preventAutoHideAsync();
 
 const queryClient = new QueryClient();
 
+// Auth guard: watches auth state and redirects automatically
+function AuthGuard({ children }: { children: React.ReactNode }) {
+  const { isAuthenticated, isLoading } = useAuth();
+  const segments = useSegments();
+  const router = useRouter();
+
+  useEffect(() => {
+    if (isLoading) return;
+
+    const inAuthGroup = segments[0] === '(auth)';
+    const inTabsGroup = segments[0] === '(tabs)';
+
+    if (!isAuthenticated && !inAuthGroup) {
+      // Not logged in and not on an auth screen → go to login
+      router.replace('/(auth)/login');
+    } else if (isAuthenticated && inAuthGroup) {
+      // Logged in but still on an auth screen → go to main app
+      router.replace('/(tabs)/');
+    }
+  }, [isAuthenticated, isLoading, segments]);
+
+  return <>{children}</>;
+}
+
 function RootLayoutNav() {
   return (
-    <Stack screenOptions={{ headerShown: false }}>
-      <Stack.Screen name="index" options={{ headerShown: false }} />
-      <Stack.Screen name="(auth)" options={{ headerShown: false }} />
-      <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-    </Stack>
+    <AuthGuard>
+      <Stack screenOptions={{ headerShown: false }}>
+        <Stack.Screen name="index" />
+        <Stack.Screen name="(auth)" />
+        <Stack.Screen name="(tabs)" />
+      </Stack>
+    </AuthGuard>
   );
 }
 

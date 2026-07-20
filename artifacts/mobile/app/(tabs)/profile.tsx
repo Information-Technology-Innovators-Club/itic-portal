@@ -1,9 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import {
-  ActivityIndicator, Alert, ScrollView, StyleSheet, Text,
-  TouchableOpacity, View, Platform,
+  ActivityIndicator, ScrollView, StyleSheet, Text,
+  TouchableOpacity, View, Platform, Alert,
 } from 'react-native';
-import { router } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Animated, { FadeInDown, FadeInUp } from 'react-native-reanimated';
 import { Ionicons } from '@expo/vector-icons';
@@ -31,7 +30,9 @@ function InfoRow({ icon, label, value }: { icon: keyof typeof Ionicons.glyphMap;
 }
 
 function formatDate(str: string) {
-  return new Date(str).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' });
+  try {
+    return new Date(str).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' });
+  } catch { return str; }
 }
 
 export default function ProfileScreen() {
@@ -40,6 +41,7 @@ export default function ProfileScreen() {
   const { user, logout } = useAuth();
   const [attendance, setAttendance] = useState<AttendanceRecord[]>([]);
   const [loading, setLoading] = useState(true);
+  const [signingOut, setSigningOut] = useState(false);
   const topPad = Platform.OS === 'web' ? 67 : insets.top;
 
   useEffect(() => {
@@ -52,23 +54,37 @@ export default function ProfileScreen() {
     })();
   }, [user?.id]);
 
-  async function handleLogout() {
-    Alert.alert('Sign Out', 'Are you sure you want to sign out?', [
-      { text: 'Cancel', style: 'cancel' },
-      {
-        text: 'Sign Out', style: 'destructive', onPress: async () => {
-          await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-          await logout();
-          router.replace('/(auth)/login');
-        },
-      },
-    ]);
+  async function doLogout() {
+    setSigningOut(true);
+    try {
+      await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+      await logout();
+      // AuthGuard in _layout.tsx will automatically redirect to login
+    } catch {
+      setSigningOut(false);
+    }
+  }
+
+  function handleLogout() {
+    if (Platform.OS === 'web') {
+      // On web, Alert might not work reliably with async callbacks — use direct logout
+      if (window.confirm('Sign out of ITIC Portal?')) {
+        doLogout();
+      }
+    } else {
+      Alert.alert('Sign Out', 'Are you sure you want to sign out?', [
+        { text: 'Cancel', style: 'cancel' },
+        { text: 'Sign Out', style: 'destructive', onPress: doLogout },
+      ]);
+    }
   }
 
   if (!user || loading) {
-    return <View style={[styles.center, { backgroundColor: colors.background }]}>
-      <ActivityIndicator color={colors.primary} />
-    </View>;
+    return (
+      <View style={[styles.center, { backgroundColor: colors.background }]}>
+        <ActivityIndicator color={colors.primary} />
+      </View>
+    );
   }
 
   const qrData = JSON.stringify({ memberId: user.memberId, name: user.fullName, id: user.id });
@@ -76,7 +92,13 @@ export default function ProfileScreen() {
   return (
     <ScrollView
       style={{ backgroundColor: colors.background }}
-      contentContainerStyle={[styles.scroll, { paddingTop: topPad + 16, paddingBottom: Platform.OS === 'web' ? 50 : insets.bottom + 90 }]}
+      contentContainerStyle={[
+        styles.scroll,
+        {
+          paddingTop: topPad + 16,
+          paddingBottom: Platform.OS === 'web' ? 50 : insets.bottom + 90,
+        },
+      ]}
       showsVerticalScrollIndicator={false}
     >
       {/* Hero */}
@@ -100,7 +122,7 @@ export default function ProfileScreen() {
         <GlassCard style={styles.qrCard}>
           <Text style={[styles.qrTitle, { color: colors.foreground }]}>Attendance QR Code</Text>
           <Text style={[styles.qrSub, { color: colors.mutedForeground }]}>
-            Show this code to an executive for event attendance
+            Show this to an executive at events for attendance
           </Text>
           <View style={[styles.qrWrap, { backgroundColor: '#fff', borderRadius: colors.radius }]}>
             <QRCode
@@ -114,7 +136,22 @@ export default function ProfileScreen() {
         </GlassCard>
       </Animated.View>
 
-      {/* Tech interests */}
+      {/* Pending notice */}
+      {user.status === 'pending' && (
+        <Animated.View entering={FadeInUp.delay(160).springify()}>
+          <View style={[styles.pendingNotice, { backgroundColor: '#fef3c7', borderColor: '#f59e0b40', borderRadius: colors.radius }]}>
+            <Ionicons name="time-outline" size={18} color="#92400e" />
+            <View style={{ flex: 1 }}>
+              <Text style={styles.pendingTitle}>Approval Pending</Text>
+              <Text style={styles.pendingText}>
+                Your registration is under review by an executive. You can explore the app while waiting.
+              </Text>
+            </View>
+          </View>
+        </Animated.View>
+      )}
+
+      {/* Technology interests */}
       {user.technologyInterests.length > 0 && (
         <Animated.View entering={FadeInUp.delay(200).springify()}>
           <GlassCard>
@@ -130,7 +167,7 @@ export default function ProfileScreen() {
         </Animated.View>
       )}
 
-      {/* Languages */}
+      {/* Programming languages */}
       {user.programmingLanguages.length > 0 && (
         <Animated.View entering={FadeInUp.delay(220).springify()}>
           <GlassCard>
@@ -146,7 +183,7 @@ export default function ProfileScreen() {
         </Animated.View>
       )}
 
-      {/* Academic + Personal Info */}
+      {/* Academic info */}
       <Animated.View entering={FadeInUp.delay(250).springify()}>
         <GlassCard style={{ gap: 14 }}>
           <Text style={[styles.sectionLabel, { color: colors.foreground }]}>Academic Information</Text>
@@ -154,18 +191,36 @@ export default function ProfileScreen() {
           <InfoRow icon="business-outline" label="Department" value={user.department} />
           <InfoRow icon="library-outline" label="Programme" value={user.programme} />
           <InfoRow icon="trending-up-outline" label="Level" value={`${user.academicLevel} · ${user.semester}`} />
+          <InfoRow icon="options-outline" label="Experience" value={user.experienceLevel} />
+          <InfoRow icon="laptop-outline" label="Laptop" value={user.hasLaptop ? 'Yes' : 'No'} />
         </GlassCard>
       </Animated.View>
 
+      {/* Contact & links */}
       <Animated.View entering={FadeInUp.delay(270).springify()}>
         <GlassCard style={{ gap: 14 }}>
           <Text style={[styles.sectionLabel, { color: colors.foreground }]}>Contact &amp; Links</Text>
           <InfoRow icon="mail-outline" label="Email" value={user.email} />
           <InfoRow icon="call-outline" label="Phone" value={user.phone} />
-          {user.githubUsername && <InfoRow icon="logo-github" label="GitHub" value={user.githubUsername} />}
-          {user.linkedIn && <InfoRow icon="logo-linkedin" label="LinkedIn" value={user.linkedIn} />}
+          <InfoRow icon="person-outline" label="Gender" value={user.gender} />
+          <InfoRow icon="calendar-outline" label="Date of Birth" value={user.dateOfBirth} />
+          {!!user.githubUsername && <InfoRow icon="logo-github" label="GitHub" value={user.githubUsername} />}
+          {!!user.linkedIn && <InfoRow icon="logo-linkedin" label="LinkedIn" value={user.linkedIn} />}
+          {!!user.portfolio && <InfoRow icon="globe-outline" label="Portfolio" value={user.portfolio} />}
         </GlassCard>
       </Animated.View>
+
+      {/* Emergency contact */}
+      {!!user.emergencyContactName && user.emergencyContactName !== 'N/A' && (
+        <Animated.View entering={FadeInUp.delay(285).springify()}>
+          <GlassCard style={{ gap: 14 }}>
+            <Text style={[styles.sectionLabel, { color: colors.foreground }]}>Emergency Contact</Text>
+            <InfoRow icon="person-outline" label="Name" value={user.emergencyContactName} />
+            <InfoRow icon="call-outline" label="Phone" value={user.emergencyContactPhone} />
+            <InfoRow icon="heart-outline" label="Relationship" value={user.emergencyContactRelation} />
+          </GlassCard>
+        </Animated.View>
+      )}
 
       {/* Attendance history */}
       <Animated.View entering={FadeInUp.delay(290).springify()}>
@@ -196,11 +251,22 @@ export default function ProfileScreen() {
       <Animated.View entering={FadeInUp.delay(310).springify()}>
         <TouchableOpacity
           onPress={handleLogout}
+          disabled={signingOut}
           activeOpacity={0.75}
-          style={[styles.signOutBtn, { backgroundColor: colors.destructive + '12', borderColor: colors.destructive + '30', borderRadius: colors.radius }]}
+          style={[
+            styles.signOutBtn,
+            {
+              backgroundColor: colors.destructive + '12',
+              borderColor: colors.destructive + '30',
+              borderRadius: colors.radius,
+              opacity: signingOut ? 0.6 : 1,
+            },
+          ]}
         >
           <Ionicons name="log-out-outline" size={18} color={colors.destructive} />
-          <Text style={[styles.signOutText, { color: colors.destructive }]}>Sign Out</Text>
+          <Text style={[styles.signOutText, { color: colors.destructive }]}>
+            {signingOut ? 'Signing out...' : 'Sign Out'}
+          </Text>
         </TouchableOpacity>
       </Animated.View>
     </ScrollView>
@@ -227,6 +293,11 @@ const styles = StyleSheet.create({
   qrSub: { fontSize: 13, fontFamily: 'Inter_400Regular', textAlign: 'center', lineHeight: 19 },
   qrWrap: { padding: 20 },
   qrId: { fontSize: 15, fontFamily: 'Inter_700Bold', letterSpacing: 1 },
+  pendingNotice: {
+    flexDirection: 'row', gap: 12, padding: 14, borderWidth: 1, alignItems: 'flex-start',
+  },
+  pendingTitle: { fontSize: 14, fontFamily: 'Inter_600SemiBold', color: '#92400e', marginBottom: 2 },
+  pendingText: { fontSize: 13, fontFamily: 'Inter_400Regular', color: '#92400e', lineHeight: 19 },
   sectionLabel: { fontSize: 16, fontFamily: 'Inter_700Bold', marginBottom: 4 },
   tagWrap: { flexDirection: 'row', flexWrap: 'wrap', gap: 7, marginTop: 4 },
   tag: { paddingHorizontal: 10, paddingVertical: 5 },
@@ -240,6 +311,9 @@ const styles = StyleSheet.create({
   attDot: { width: 8, height: 8, borderRadius: 4 },
   attEvent: { fontSize: 14, fontFamily: 'Inter_500Medium' },
   attDate: { fontSize: 12, fontFamily: 'Inter_400Regular' },
-  signOutBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10, paddingVertical: 14, borderWidth: 1 },
+  signOutBtn: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
+    gap: 10, paddingVertical: 14, borderWidth: 1,
+  },
   signOutText: { fontSize: 15, fontFamily: 'Inter_600SemiBold' },
 });
