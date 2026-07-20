@@ -72,6 +72,124 @@ The underlying schema file is located at `artifacts/mobile/supabase_schema.sql`.
    EXPO_PUBLIC_SUPABASE_ANON_KEY=your-anon-public-key
    ```
 
+
+### Database Schema 
+
+## Table `profiles`
+
+### Columns
+
+| Name | Type | Constraints |
+|------|------|-------------|
+| `id` | `uuid` | Primary |
+| `member_id` | `text` |  Unique |
+| `full_name` | `text` |  |
+| `student_number` | `text` |  Unique |
+| `email` | `text` |  Unique |
+| `phone` | `text` |  Nullable |
+| `gender` | `text` |  Nullable |
+| `date_of_birth` | `text` |  Nullable |
+| `faculty` | `text` |  Nullable |
+| `department` | `text` |  Nullable |
+| `programme` | `text` |  Nullable |
+| `academic_level` | `text` |  Nullable |
+| `semester` | `text` |  Nullable |
+| `technology_interests` | `_text` |  Nullable |
+| `programming_languages` | `_text` |  Nullable |
+| `experience_level` | `text` |  Nullable |
+| `has_laptop` | `bool` |  Nullable |
+| `github_username` | `text` |  Nullable |
+| `linked_in` | `text` |  Nullable |
+| `portfolio` | `text` |  Nullable |
+| `profile_picture` | `text` |  Nullable |
+| `role` | `text` |  Nullable |
+| `status` | `text` |  Nullable |
+| `joined_date` | `timestamptz` |  Nullable |
+| `last_active` | `timestamptz` |  Nullable |
+| `email_verified` | `bool` |  Nullable |
+| `profile_completeness` | `int4` |  Nullable |
+
+## Table `events`
+
+### Columns
+
+| Name | Type | Constraints |
+|------|------|-------------|
+| `id` | `uuid` | Primary |
+| `title` | `text` |  |
+| `description` | `text` |  Nullable |
+| `date` | `text` |  |
+| `time` | `text` |  Nullable |
+| `venue` | `text` |  Nullable |
+| `category` | `text` |  Nullable |
+| `status` | `text` |  Nullable |
+| `attendee_count` | `int4` |  Nullable |
+| `max_attendees` | `int4` |  Nullable |
+| `organizer_id` | `uuid` |  Nullable |
+| `tags` | `_text` |  Nullable |
+| `created_at` | `timestamptz` |  Nullable |
+
+## Table `announcements`
+
+### Columns
+
+| Name | Type | Constraints |
+|------|------|-------------|
+| `id` | `uuid` | Primary |
+| `title` | `text` |  |
+| `content` | `text` |  |
+| `category` | `text` |  Nullable |
+| `author_id` | `uuid` |  Nullable |
+| `author_name` | `text` |  Nullable |
+| `is_pinned` | `bool` |  Nullable |
+| `created_at` | `timestamptz` |  Nullable |
+| `updated_at` | `timestamptz` |  Nullable |
+
+## Table `attendance`
+
+### Columns
+
+| Name | Type | Constraints |
+|------|------|-------------|
+| `id` | `uuid` | Primary |
+| `member_id` | `uuid` |  Nullable |
+| `event_id` | `uuid` |  Nullable |
+| `event_title` | `text` |  Nullable |
+| `checked_in_at` | `timestamptz` |  Nullable |
+| `checked_in_by` | `uuid` |  Nullable |
+
+## RLS Policies
+
+### `profiles`
+
+| Policy | Command | Roles | Action | USING | WITH CHECK |
+|--------|---------|-------|--------|-------|------------|
+| `profiles_update` | UPDATE | authenticated | PERMISSIVE | `((auth.uid() = id) OR (EXISTS ( SELECT 1    FROM profiles p   WHERE ((p.id = auth.uid()) AND (p.role = ANY (ARRAY['executive'::text, 'admin'::text]))))))` | — |
+| `profiles_insert` | INSERT | authenticated | PERMISSIVE | — | `(auth.uid() = id)` |
+| `profiles_read` | SELECT | authenticated | PERMISSIVE | `true` | — |
+
+### `events`
+
+| Policy | Command | Roles | Action | USING | WITH CHECK |
+|--------|---------|-------|--------|-------|------------|
+| `events_write` | ALL | authenticated | PERMISSIVE | `(EXISTS ( SELECT 1    FROM profiles p   WHERE ((p.id = auth.uid()) AND (p.role = ANY (ARRAY['executive'::text, 'admin'::text])))))` | — |
+| `events_read` | SELECT | authenticated | PERMISSIVE | `true` | — |
+
+### `announcements`
+
+| Policy | Command | Roles | Action | USING | WITH CHECK |
+|--------|---------|-------|--------|-------|------------|
+| `ann_write` | ALL | authenticated | PERMISSIVE | `(EXISTS ( SELECT 1    FROM profiles p   WHERE ((p.id = auth.uid()) AND (p.role = ANY (ARRAY['executive'::text, 'admin'::text])))))` | — |
+| `ann_read` | SELECT | authenticated | PERMISSIVE | `true` | — |
+
+### `attendance`
+
+| Policy | Command | Roles | Action | USING | WITH CHECK |
+|--------|---------|-------|--------|-------|------------|
+| `att_insert` | INSERT | authenticated | PERMISSIVE | — | `(EXISTS ( SELECT 1    FROM profiles p   WHERE ((p.id = auth.uid()) AND (p.role = ANY (ARRAY['executive'::text, 'admin'::text])))))` |
+| `att_read` | SELECT | authenticated | PERMISSIVE | `((member_id = auth.uid()) OR (EXISTS ( SELECT 1    FROM profiles p   WHERE ((p.id = auth.uid()) AND (p.role = ANY (ARRAY['executive'::text, 'admin'::text]))))))` | — |
+
+
 ### Creating Your First Admin Account
 Since standard sign-ups default to a `'member'` role with a `'pending'` status, follow these steps to bootstrap your primary Administrator:
 1. Navigate to the **Authentication** tab ➔ **Users** ➔ **Add User** (Create User).
