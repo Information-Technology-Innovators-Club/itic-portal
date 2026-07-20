@@ -208,8 +208,8 @@ export default function RegisterScreen() {
         {step === 0 && (
           <Animated.View entering={FadeInRight.springify()} style={styles.stepContent}>
             <Text style={[styles.sectionTitle, { color: colors.foreground }]}>Personal Information</Text>
-            <Input label="Full Name *" placeholder="e.g. Takunda Moyo" value={form.fullName} onChangeText={v => set('fullName', v)} leftIcon="person-outline" />
-            <Input label="Student Number *" placeholder="e.g. C221456B" value={form.studentNumber} onChangeText={v => set('studentNumber', v)} autoCapitalize="characters" leftIcon="card-outline" />
+            <Input label="Full Name *" placeholder="Your full name" value={form.fullName} onChangeText={v => set('fullName', v)} leftIcon="person-outline" />
+            <Input label="Student Number *" placeholder="Your student number" value={form.studentNumber} onChangeText={v => set('studentNumber', v)} autoCapitalize="characters" leftIcon="card-outline" />
             <Input label="Email Address *" placeholder="your@email.com" value={form.email} onChangeText={v => set('email', v)} keyboardType="email-address" autoCapitalize="none" leftIcon="mail-outline" />
             <Input label="Password *" placeholder="At least 6 characters" value={form.password} onChangeText={v => set('password', v)} secureTextEntry leftIcon="lock-closed-outline" />
             <Input label="Phone Number *" placeholder="+263 77 123 4567" value={form.phone} onChangeText={v => set('phone', v)} keyboardType="phone-pad" leftIcon="call-outline" />

@@ -80,7 +80,7 @@ export default function LoginScreen() {
           <View style={{ gap: 14 }}>
             <Input
               label="University Email"
-              placeholder="e.g. C221456B@cut.ac.zw"
+              placeholder="your@email.com"
               value={email}
               onChangeText={setEmail}
               keyboardType="email-address"
@@ -110,17 +110,6 @@ export default function LoginScreen() {
             loading={loading}
             style={{ marginTop: 8 }}
           />
-        </Animated.View>
-
-        {/* Demo hint */}
-        <Animated.View entering={FadeInUp.delay(250).springify()} style={styles.demo}>
-          <Text style={[styles.demoLabel, { color: colors.mutedForeground }]}>DEMO ACCOUNTS</Text>
-          <Text style={[styles.demoLine, { color: colors.mutedForeground }]}>
-            Executive: exec@itic.co.zw / exec123
-          </Text>
-          <Text style={[styles.demoLine, { color: colors.mutedForeground }]}>
-            Admin: admin@itic.co.zw / admin123
-          </Text>
         </Animated.View>
 
         {/* Register */}
@@ -159,9 +148,6 @@ const styles = StyleSheet.create({
   cardTitle: { fontSize: 22, fontFamily: 'Inter_700Bold', letterSpacing: -0.3 },
   cardSub: { fontSize: 14, fontFamily: 'Inter_400Regular', marginTop: -8 },
   forgot: { fontSize: 13, fontFamily: 'Inter_500Medium' },
-  demo: { alignItems: 'center', gap: 4 },
-  demoLabel: { fontSize: 10, fontFamily: 'Inter_700Bold', letterSpacing: 1 },
-  demoLine: { fontSize: 12, fontFamily: 'Inter_400Regular' },
   registerRow: { flexDirection: 'row', justifyContent: 'center', alignItems: 'center' },
   registerText: { fontSize: 14, fontFamily: 'Inter_400Regular' },
   registerLink: { fontSize: 14, fontFamily: 'Inter_700Bold' },

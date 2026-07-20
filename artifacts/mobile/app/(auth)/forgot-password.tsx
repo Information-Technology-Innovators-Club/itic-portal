@@ -7,22 +7,37 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import { Ionicons } from '@expo/vector-icons';
 import { useColors } from '@/hooks/useColors';
+import { useToast } from '@/context/ToastContext';
+import { supabase } from '@/services/supabase';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 
 export default function ForgotPasswordScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
+  const { showToast } = useToast();
   const [email, setEmail] = useState('');
   const [sent, setSent] = useState(false);
   const [loading, setLoading] = useState(false);
 
   async function handleSend() {
-    if (!email.trim()) return;
+    if (!email.trim() || !email.includes('@')) {
+      showToast('warning', 'Enter a valid email address');
+      return;
+    }
     setLoading(true);
-    await new Promise(r => setTimeout(r, 1500));
-    setLoading(false);
-    setSent(true);
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(email.trim(), {
+        redirectTo: undefined, // Supabase sends the link; no custom redirect needed
+      });
+      if (error) throw error;
+      setSent(true);
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Failed to send reset email.';
+      showToast('error', 'Could not send reset link', msg);
+    } finally {
+      setLoading(false);
+    }
   }
 
   return (
@@ -42,11 +57,11 @@ export default function ForgotPasswordScreen() {
             </View>
             <Text style={[styles.title, { color: colors.foreground }]}>Forgot Password?</Text>
             <Text style={[styles.sub, { color: colors.mutedForeground }]}>
-              Enter your university email address and we'll send you a reset link.
+              Enter the email address linked to your ITIC account. We'll send you a reset link.
             </Text>
             <Input
-              label="University Email"
-              placeholder="e.g. C221456B@cut.ac.zw"
+              label="Email Address"
+              placeholder="your@email.com"
               value={email}
               onChangeText={setEmail}
               keyboardType="email-address"
@@ -62,12 +77,12 @@ export default function ForgotPasswordScreen() {
           </Animated.View>
         ) : (
           <Animated.View entering={FadeInDown.springify()} style={styles.content}>
-            <View style={[styles.iconCircle, { backgroundColor: colors.success + '15' }]}>
-              <Ionicons name="checkmark-circle" size={48} color={colors.success} />
+            <View style={[styles.iconCircle, { backgroundColor: colors.primary + '15' }]}>
+              <Ionicons name="checkmark-circle" size={48} color={colors.primary} />
             </View>
-            <Text style={[styles.title, { color: colors.foreground }]}>Email Sent!</Text>
+            <Text style={[styles.title, { color: colors.foreground }]}>Check Your Inbox</Text>
             <Text style={[styles.sub, { color: colors.mutedForeground }]}>
-              If {email} is registered, you'll receive a password reset link shortly. Check your inbox.
+              If <Text style={{ fontFamily: 'Inter_600SemiBold', color: colors.foreground }}>{email}</Text> is registered, a password reset link is on its way. Check your spam folder if you don't see it.
             </Text>
             <Button title="Back to Sign In" onPress={() => router.replace('/(auth)/login')} fullWidth />
           </Animated.View>

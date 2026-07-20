@@ -313,7 +313,7 @@ export default function ScannerScreen() {
             Enter a member ID manually:
           </Text>
           <Input
-            placeholder="ITIC-2024-0001"
+            placeholder="Member ID"
             value={manualId}
             onChangeText={setManualId}
             autoCapitalize="characters"
@@ -364,7 +364,7 @@ export default function ScannerScreen() {
             <View style={{ flexDirection: 'row', gap: 8 }}>
               <View style={{ flex: 1 }}>
                 <Input
-                  placeholder="ITIC-2024-0001"
+                  placeholder="Member ID"
                   value={manualId}
                   onChangeText={setManualId}
                   autoCapitalize="characters"

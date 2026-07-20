@@ -35,7 +35,7 @@ export default function VerifyEmailScreen() {
       {/* Member ID card */}
       <Animated.View entering={FadeInDown.delay(300).springify()} style={[styles.idCard, { borderColor: '#16a34a40' }]}>
         <Text style={styles.idLabel}>YOUR MEMBER ID</Text>
-        <Text style={styles.idValue}>{memberId ?? 'ITIC-2024-0001'}</Text>
+        <Text style={styles.idValue}>{memberId}</Text>
         <Text style={styles.idNote}>Save this — you'll need it for attendance and events</Text>
       </Animated.View>
 
