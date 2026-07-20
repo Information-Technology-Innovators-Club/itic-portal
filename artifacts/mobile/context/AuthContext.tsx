@@ -1,70 +1,94 @@
-import React, { createContext, useContext, useEffect, useState } from 'react';
+import React, { createContext, useContext, useEffect, useState, useCallback } from 'react';
+import { supabase } from '@/services/supabase';
+import * as db from '@/services/db';
 import { User, RegisterFormData } from '@/types';
-import * as storage from '@/services/storage';
 
 interface AuthContextValue {
   user: User | null;
   isLoading: boolean;
   isAuthenticated: boolean;
   login: (email: string, password: string) => Promise<void>;
-  register: (data: RegisterFormData) => Promise<void>;
+  register: (data: RegisterFormData) => Promise<User>;
   logout: () => Promise<void>;
   refreshUser: () => Promise<void>;
 }
 
-const AuthContext = createContext<AuthContextValue | null>(null);
+const AuthContext = createContext<AuthContextValue>({
+  user: null,
+  isLoading: true,
+  isAuthenticated: false,
+  login: async () => {},
+  register: async () => { throw new Error('Not ready'); },
+  logout: async () => {},
+  refreshUser: async () => {},
+});
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  useEffect(() => {
-    bootstrap();
+  const refreshUser = useCallback(async () => {
+    try {
+      const u = await db.getCurrentUser();
+      setUser(u);
+    } catch {
+      setUser(null);
+    }
   }, []);
 
-  async function bootstrap() {
-    try {
-      await storage.initStorage();
-      const currentUser = await storage.getCurrentUser();
-      setUser(currentUser);
-    } catch (err) {
-      console.error('Auth bootstrap error:', err);
-    } finally {
+  useEffect(() => {
+    // Initial session check
+    (async () => {
+      await refreshUser();
       setIsLoading(false);
-    }
-  }
+    })();
 
-  async function login(email: string, password: string) {
-    const loggedIn = await storage.loginUser(email, password);
-    setUser(loggedIn);
-  }
+    // Listen for Supabase auth state changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event) => {
+      if (event === 'SIGNED_OUT') {
+        setUser(null);
+      } else if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
+        await refreshUser();
+      }
+      setIsLoading(false);
+    });
 
-  async function register(data: RegisterFormData) {
-    const newUser = await storage.registerUser(data);
-    setUser(newUser);
-  }
+    return () => subscription.unsubscribe();
+  }, [refreshUser]);
 
-  async function logout() {
-    await storage.logoutUser();
+  const login = useCallback(async (email: string, password: string) => {
+    const u = await db.loginUser(email, password);
+    setUser(u);
+  }, []);
+
+  const register = useCallback(async (data: RegisterFormData): Promise<User> => {
+    const u = await db.registerUser(data);
+    setUser(u);
+    return u;
+  }, []);
+
+  const logout = useCallback(async () => {
     setUser(null);
-  }
-
-  async function refreshUser() {
-    const currentUser = await storage.getCurrentUser();
-    setUser(currentUser);
-  }
+    await db.logoutUser();
+  }, []);
 
   return (
-    <AuthContext.Provider value={{
-      user, isLoading, isAuthenticated: !!user, login, register, logout, refreshUser,
-    }}>
+    <AuthContext.Provider
+      value={{
+        user,
+        isLoading,
+        isAuthenticated: !!user,
+        login,
+        register,
+        logout,
+        refreshUser,
+      }}
+    >
       {children}
     </AuthContext.Provider>
   );
 }
 
-export function useAuth(): AuthContextValue {
-  const ctx = useContext(AuthContext);
-  if (!ctx) throw new Error('useAuth must be used within AuthProvider');
-  return ctx;
+export function useAuth() {
+  return useContext(AuthContext);
 }

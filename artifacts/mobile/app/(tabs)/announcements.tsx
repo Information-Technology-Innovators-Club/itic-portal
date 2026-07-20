@@ -1,117 +1,94 @@
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import {
-  FlatList, RefreshControl, ScrollView, StyleSheet,
-  Text, TouchableOpacity, View, Platform, ActivityIndicator,
+  ActivityIndicator, FlatList, Platform, RefreshControl,
+  ScrollView, StyleSheet, Text, TouchableOpacity, View,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Animated, { FadeInDown } from 'react-native-reanimated';
+import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import * as Haptics from 'expo-haptics';
 import { useColors } from '@/hooks/useColors';
-import { Announcement, AnnouncementCategory } from '@/types';
-import * as storage from '@/services/storage';
+import * as db from '@/services/db';
 import { AnnouncementCard } from '@/components/AnnouncementCard';
+import { Announcement, AnnouncementCategory } from '@/types';
 
-type Filter = AnnouncementCategory | 'all';
-
-const FILTERS: { label: string; value: Filter; icon: keyof typeof Ionicons.glyphMap }[] = [
-  { label: 'All', value: 'all', icon: 'apps-outline' },
-  { label: 'General', value: 'general', icon: 'information-circle-outline' },
-  { label: 'Workshop', value: 'workshop', icon: 'construct-outline' },
-  { label: 'Hackathon', value: 'hackathon', icon: 'code-slash-outline' },
-  { label: 'Meeting', value: 'meeting', icon: 'people-outline' },
-  { label: 'Urgent', value: 'urgent', icon: 'alert-circle-outline' },
+const CATEGORIES: { label: string; value: AnnouncementCategory | 'all' }[] = [
+  { label: 'All', value: 'all' },
+  { label: '📢 General', value: 'general' },
+  { label: '🛠 Workshop', value: 'workshop' },
+  { label: '⚡ Hackathon', value: 'hackathon' },
+  { label: '📅 Meeting', value: 'meeting' },
+  { label: '🚨 Urgent', value: 'urgent' },
 ];
 
 export default function AnnouncementsScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
-  const [filter, setFilter] = useState<Filter>('all');
+  const router = useRouter();
   const [announcements, setAnnouncements] = useState<Announcement[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [cat, setCat] = useState<AnnouncementCategory | 'all'>('all');
 
-  async function loadData() {
-    const anns = await storage.getAnnouncements();
-    setAnnouncements(anns);
-    setLoading(false);
-  }
+  const load = useCallback(async () => {
+    try {
+      const data = await db.getAnnouncements();
+      setAnnouncements(data);
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
+  }, []);
 
-  async function onRefresh() {
-    setRefreshing(true);
-    await loadData();
-    setRefreshing(false);
-  }
+  useEffect(() => { load(); }, [load]);
 
-  useEffect(() => { loadData(); }, []);
+  const onRefresh = useCallback(() => { setRefreshing(true); load(); }, [load]);
 
-  const filtered = filter === 'all'
-    ? announcements
-    : announcements.filter(a => a.category === filter);
-
-  const topPad = Platform.OS === 'web' ? 67 : insets.top;
+  const filtered = cat === 'all' ? announcements : announcements.filter(a => a.category === cat);
+  const topPad = Platform.OS === 'web' ? 24 : insets.top + 8;
 
   return (
     <View style={{ flex: 1, backgroundColor: colors.background }}>
-      <View style={[styles.header, { paddingTop: topPad + 12 }]}>
+      {/* Header */}
+      <View style={[styles.header, { paddingTop: topPad, backgroundColor: colors.background, borderBottomColor: colors.border }]}>
         <Text style={[styles.title, { color: colors.foreground }]}>Announcements</Text>
-        <Text style={[styles.sub, { color: colors.mutedForeground }]}>
-          Club news and updates
-        </Text>
-
         {/* Filter chips */}
-        <ScrollView
-          horizontal showsHorizontalScrollIndicator={false}
-          contentContainerStyle={styles.filterRow}
-        >
-          {FILTERS.map(f => {
-            const active = filter === f.value;
-            return (
-              <TouchableOpacity
-                key={f.value}
-                onPress={async () => {
-                  await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                  setFilter(f.value);
-                }}
-                style={[
-                  styles.filterChip,
-                  {
-                    backgroundColor: active ? colors.primary : colors.muted,
-                    borderColor: active ? colors.primary : colors.border,
-                    borderRadius: 20,
-                  },
-                ]}
-              >
-                <Ionicons
-                  name={f.icon}
-                  size={13}
-                  color={active ? '#fff' : colors.mutedForeground}
-                />
-                <Text style={[styles.filterChipText, { color: active ? '#fff' : colors.mutedForeground }]}>
-                  {f.label}
-                </Text>
-              </TouchableOpacity>
-            );
-          })}
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8 }}>
+          {CATEGORIES.map(c => (
+            <TouchableOpacity
+              key={c.value}
+              onPress={() => setCat(c.value)}
+              style={[
+                styles.chip,
+                {
+                  backgroundColor: cat === c.value ? colors.primary : colors.muted,
+                  borderColor: cat === c.value ? colors.primary : colors.border,
+                },
+              ]}
+            >
+              <Text style={[styles.chipText, { color: cat === c.value ? '#fff' : colors.mutedForeground }]}>
+                {c.label}
+              </Text>
+            </TouchableOpacity>
+          ))}
         </ScrollView>
       </View>
 
       {loading ? (
-        <View style={styles.center}>
-          <ActivityIndicator color={colors.primary} size="large" />
-        </View>
+        <View style={styles.center}><ActivityIndicator color={colors.primary} /></View>
       ) : (
         <FlatList
           data={filtered}
           keyExtractor={item => item.id}
-          contentContainerStyle={[styles.list, { paddingBottom: 100 }]}
+          contentContainerStyle={{ padding: 20, gap: 14, paddingBottom: insets.bottom + 90 }}
+          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />}
           showsVerticalScrollIndicator={false}
-          refreshControl={
-            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />
-          }
           renderItem={({ item, index }) => (
-            <Animated.View entering={FadeInDown.delay(index * 60).springify()}>
-              <AnnouncementCard announcement={item} />
+            <Animated.View entering={FadeInDown.delay(index * 50).springify()}>
+              <AnnouncementCard
+                announcement={item}
+                onPress={() => router.push(`/announcement/${item.id}` as Parameters<typeof router.push>[0])}
+              />
             </Animated.View>
           )}
           ListEmptyComponent={
@@ -119,7 +96,7 @@ export default function AnnouncementsScreen() {
               <Ionicons name="megaphone-outline" size={48} color={colors.mutedForeground} />
               <Text style={[styles.emptyTitle, { color: colors.foreground }]}>No announcements</Text>
               <Text style={[styles.emptySub, { color: colors.mutedForeground }]}>
-                {filter !== 'all' ? 'No announcements in this category' : 'Check back later'}
+                {cat === 'all' ? 'Check back soon' : `No ${cat} announcements yet`}
               </Text>
             </View>
           }
@@ -130,18 +107,12 @@ export default function AnnouncementsScreen() {
 }
 
 const styles = StyleSheet.create({
-  header: { paddingHorizontal: 20, paddingBottom: 12, gap: 4, backgroundColor: 'transparent' },
+  header: { paddingHorizontal: 20, paddingBottom: 12, gap: 12, borderBottomWidth: 1 },
   title: { fontSize: 28, fontFamily: 'Inter_700Bold', letterSpacing: -0.5 },
-  sub: { fontSize: 14, fontFamily: 'Inter_400Regular', marginBottom: 8 },
-  filterRow: { paddingRight: 20, gap: 8, paddingBottom: 4 },
-  filterChip: {
-    flexDirection: 'row', alignItems: 'center', gap: 5,
-    paddingHorizontal: 12, paddingVertical: 7, borderWidth: 1,
-  },
-  filterChipText: { fontSize: 13, fontFamily: 'Inter_500Medium' },
-  list: { padding: 20, gap: 12 },
+  chip: { paddingHorizontal: 14, paddingVertical: 7, borderRadius: 20, borderWidth: 1 },
+  chipText: { fontSize: 12, fontFamily: 'Inter_600SemiBold' },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
-  empty: { alignItems: 'center', gap: 12, paddingTop: 60 },
+  empty: { alignItems: 'center', gap: 10, paddingTop: 60 },
   emptyTitle: { fontSize: 18, fontFamily: 'Inter_600SemiBold' },
-  emptySub: { fontSize: 14, fontFamily: 'Inter_400Regular', textAlign: 'center' },
+  emptySub: { fontSize: 14, fontFamily: 'Inter_400Regular' },
 });

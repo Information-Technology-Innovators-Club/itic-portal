@@ -1,0 +1,1 @@
+- [ITIC Portal architecture](itic-portal.md) — Supabase-backed Expo app; schema SQL in artifacts/mobile/supabase_schema.sql; exec/admin demo accounts need manual creation in Supabase Auth dashboard.

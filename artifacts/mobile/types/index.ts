@@ -3,12 +3,12 @@ export type ExperienceLevel = 'beginner' | 'intermediate' | 'advanced';
 export type AnnouncementCategory = 'general' | 'workshop' | 'hackathon' | 'meeting' | 'urgent';
 export type EventStatus = 'upcoming' | 'ongoing' | 'past';
 export type MemberStatus = 'pending' | 'active' | 'inactive' | 'suspended';
-export type Gender = 'male' | 'female' | 'other';
+export type Gender = 'male' | 'female' | 'other' | 'prefer_not_to_say';
+export type ToastType = 'success' | 'error' | 'info' | 'warning';
 
 export interface User {
   id: string;
   email: string;
-  password: string;
   role: UserRole;
   status: MemberStatus;
   createdAt: string;
@@ -30,9 +30,6 @@ export interface User {
   githubUsername: string;
   linkedIn: string;
   portfolio: string;
-  emergencyContactName: string;
-  emergencyContactPhone: string;
-  emergencyContactRelation: string;
   profilePicture: string;
   joinedDate: string;
   lastActive: string;
@@ -97,8 +94,18 @@ export interface RegisterFormData {
   githubUsername: string;
   linkedIn: string;
   portfolio: string;
-  emergencyContactName: string;
-  emergencyContactPhone: string;
-  emergencyContactRelation: string;
   agreedToTerms: boolean;
+}
+
+export interface ToastMessage {
+  id: string;
+  type: ToastType;
+  title: string;
+  message?: string;
+}
+
+export interface QRPayload {
+  userId: string;
+  memberId: string;
+  name: string;
 }
