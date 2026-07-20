@@ -1,0 +1,427 @@
+You are an expert senior software engineer, UI/UX designer, and systems architect.
+
+Build a production-ready mobile application called **ITIC Portal**.
+
+The application is the official digital platform for the Information Technology Innovators Club (ITIC) at Chinhoyi University of Technology.
+
+The primary objective is to digitize member registration during university orientation while laying the foundation for a complete club management platform.
+
+This is Version 1 (Orientation Release).
+
+The application must feel modern, premium, innovative, and scalable.
+
+------------------------------------
+TECH STACK
+------------------------------------
+
+Frontend
+
+• Expo SDK (latest)
+• React Native
+• Expo Router
+• TypeScript
+• NativeWind
+• React Hook Form
+• Zod Validation
+• TanStack Query
+• Zustand
+• React Native Reanimated
+• React Native Gesture Handler
+
+Backend
+
+• Supabase
+• PostgreSQL
+• Authentication
+• Storage
+• Realtime
+• Row Level Security
+
+------------------------------------
+DESIGN
+------------------------------------
+
+Modern
+
+Glassmorphism
+
+SwiftUI-inspired
+
+Material You inspired
+
+Smooth animations
+
+Dark Mode
+
+Light Mode
+
+Green branding
+
+Primary Color
+
+#16A34A
+
+Rounded cards
+
+Premium onboarding
+
+Responsive layouts
+
+Accessible UI
+
+------------------------------------
+USER ROLES
+------------------------------------
+
+Guest
+
+Member
+
+Executive
+
+Administrator
+
+------------------------------------
+VERSION ONE FEATURES
+------------------------------------
+
+Authentication
+
+• Sign Up
+• Login
+• Forgot Password
+• Email Verification
+
+------------------------------------
+
+Member Registration
+
+Collect
+
+Full Name
+
+Student Number
+
+University Email
+
+Phone Number
+
+Faculty
+
+Department
+
+Programme
+
+Academic Level
+
+Semester
+
+Gender
+
+Date of Birth
+
+Technology Interests
+
+Programming Languages
+
+Experience Level
+
+Laptop Ownership
+
+GitHub Username
+
+LinkedIn
+
+Portfolio
+
+Emergency Contact
+
+Profile Picture
+
+Terms Acceptance
+
+Generate Member ID automatically
+
+------------------------------------
+
+Dashboard
+
+Display
+
+Welcome Message
+
+Member Status
+
+Upcoming Events
+
+Announcements
+
+Quick Actions
+
+Latest News
+
+Profile Completion
+
+------------------------------------
+
+Announcements
+
+Admin creates announcements.
+
+Members receive announcements instantly.
+
+Categories
+
+General
+
+Workshop
+
+Hackathon
+
+Meeting
+
+Urgent
+
+------------------------------------
+
+Events
+
+Upcoming Events
+
+Past Events
+
+Event Details
+
+Register Attendance
+
+------------------------------------
+
+Attendance
+
+Each member has
+
+QR Code
+
+Executive scans QR Code
+
+Attendance automatically recorded.
+
+Store
+
+Date
+
+Time
+
+Event
+
+Check-in User
+
+------------------------------------
+
+Member Profile
+
+View profile
+
+Edit profile
+
+Membership Number
+
+QR Code
+
+Technology Interests
+
+Attendance History
+
+Joined Date
+
+------------------------------------
+
+Executive Dashboard
+
+Statistics
+
+Members
+
+Departments
+
+Faculties
+
+Attendance
+
+Recent Registrations
+
+Search Members
+
+Export CSV
+
+Approve Registrations
+
+Create Events
+
+Create Announcements
+
+------------------------------------
+
+DATABASE
+
+Design a normalized PostgreSQL schema.
+
+Include
+
+profiles
+
+members
+
+faculties
+
+departments
+
+programmes
+
+technology_interests
+
+member_interests
+
+programming_languages
+
+member_languages
+
+events
+
+attendance
+
+announcements
+
+roles
+
+permissions
+
+audit_logs
+
+notifications
+
+settings
+
+Every table must include
+
+UUID primary key
+
+created_at
+
+updated_at
+
+created_by
+
+Soft delete support
+
+Indexes
+
+Foreign keys
+
+Constraints
+
+------------------------------------
+
+SUPABASE
+
+Configure
+
+Authentication
+
+Storage Buckets
+
+Policies
+
+Realtime
+
+Triggers
+
+Functions
+
+Automatic profile creation
+
+Automatic Member ID generation
+
+Automatic QR Code generation
+
+Automatic timestamps
+
+------------------------------------
+
+ADMIN FEATURES
+
+Dashboard
+
+Approve Members
+
+Deactivate Members
+
+Export Members
+
+Attendance Reports
+
+Analytics
+
+Manage Events
+
+Manage Announcements
+
+------------------------------------
+
+CODE QUALITY
+
+Feature-based architecture
+
+Reusable components
+
+Clean Architecture
+
+Repository Pattern
+
+Hooks
+
+Services
+
+Type-safe
+
+Well documented
+
+Production ready
+
+Scalable
+
+------------------------------------
+
+OUTPUT
+
+Generate
+
+Folder Structure
+
+Database Schema
+
+Supabase SQL
+
+Authentication Flow
+
+Navigation Structure
+
+Screens
+
+Components
+
+Hooks
+
+Services
+
+State Management
+
+API Layer
+
+Theme System
+
+Architecture Documentation
+
+Development Roadmap
+
+Everything should be production-ready and extensible for future versions.
