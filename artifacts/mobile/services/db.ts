@@ -181,6 +181,20 @@ export async function registerUser(data: RegisterFormData): Promise<User> {
   return mapProfile(profile);
 }
 
+export async function checkStudentNumberExists(studentNumber: string): Promise<boolean> {
+  if (!studentNumber.trim()) return false;
+  const { data, error } = await supabase
+    .from('profiles')
+    .select('id')
+    .eq('student_number', studentNumber.trim())
+    .maybeSingle();
+  if (error) {
+    console.error('Error checking student number exists:', error);
+    return false;
+  }
+  return !!data;
+}
+
 export async function getCurrentUser(): Promise<User | null> {
   const { data: { session } } = await supabase.auth.getSession();
   if (!session) return null;

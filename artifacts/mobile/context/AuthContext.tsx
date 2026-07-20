@@ -37,18 +37,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   useEffect(() => {
-    // Initial session check
-    (async () => {
-      await refreshUser();
-      setIsLoading(false);
-    })();
-
-    // Listen for Supabase auth state changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event) => {
-      if (event === 'SIGNED_OUT') {
-        setUser(null);
-      } else if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
+    // Listen for Supabase auth state changes (restores persisted session on startup)
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      if (session) {
         await refreshUser();
+      } else {
+        setUser(null);
       }
       setIsLoading(false);
     });

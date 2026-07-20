@@ -116,22 +116,6 @@ export default function DashboardScreen() {
             </TouchableOpacity>
           </View>
 
-          {/* Profile completeness */}
-          <View style={{ gap: 6 }}>
-            <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
-              <Text style={[styles.progLabel, { color: colors.mutedForeground }]}>Profile completeness</Text>
-              <Text style={[styles.progPct, { color: colors.primary }]}>{user?.profileCompleteness ?? 0}%</Text>
-            </View>
-            <View style={[styles.progBg, { backgroundColor: colors.muted }]}>
-              <View
-                style={[styles.progFill, {
-                  backgroundColor: colors.primary,
-                  width: `${user?.profileCompleteness ?? 0}%`,
-                }]}
-              />
-            </View>
-          </View>
-
           {user?.status === 'pending' && (
             <View style={[styles.pendingBanner, { backgroundColor: '#fef3c720', borderColor: '#f59e0b30' }]}>
               <Ionicons name="time-outline" size={14} color="#f59e0b" />
@@ -239,10 +223,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8, paddingVertical: 4, borderRadius: 8, borderWidth: 1,
   },
   viewCardText: { fontSize: 11, fontFamily: 'Inter_600SemiBold' },
-  progLabel: { fontSize: 12, fontFamily: 'Inter_400Regular' },
-  progPct: { fontSize: 12, fontFamily: 'Inter_600SemiBold' },
-  progBg: { height: 6, borderRadius: 3, overflow: 'hidden' },
-  progFill: { height: '100%', borderRadius: 3 },
   pendingBanner: {
     flexDirection: 'row', gap: 7, padding: 10,
     borderRadius: 10, borderWidth: 1, alignItems: 'center',

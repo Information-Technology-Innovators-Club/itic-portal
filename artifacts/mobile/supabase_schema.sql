@@ -87,9 +87,8 @@ alter table public.events        enable row level security;
 alter table public.announcements enable row level security;
 alter table public.attendance    enable row level security;
 
--- Profiles: any authenticated user can read; only self or exec/admin can update
-create policy "profiles_read"   on public.profiles for select to authenticated using (true);
-create policy "profiles_insert" on public.profiles for insert to authenticated with check (auth.uid() = id);
+create policy "profiles_read"   on public.profiles for select using (true);
+create policy "profiles_insert" on public.profiles for insert with check (true);
 create policy "profiles_update" on public.profiles for update to authenticated
   using (
     auth.uid() = id
