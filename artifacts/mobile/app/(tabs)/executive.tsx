@@ -2,7 +2,7 @@ import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator, Alert, FlatList, Modal, Platform,
   RefreshControl, ScrollView, StyleSheet, Text, TextInput,
-  TouchableOpacity, View, Image, Linking,
+  TouchableOpacity, View, Linking,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Animated, { FadeInDown, FadeInUp } from 'react-native-reanimated';
@@ -17,6 +17,7 @@ import { useToast } from '@/context/ToastContext';
 import * as db from '@/services/db';
 import { GlassCard } from '@/components/GlassCard';
 import { StatusBadge, RoleBadge } from '@/components/ui/Badge';
+import { AvatarDisplay } from '@/components/CartoonAvatars';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { User, AnnouncementCategory, UserRole, Event, Announcement } from '@/types';
@@ -55,13 +56,13 @@ function MemberRow({ member, currentUser, onAction }: {
       <View style={styles.memberRow}>
         {/* Avatar */}
         <View style={[styles.memberAvatar, { borderColor: colors.border }]}>
-          {member.profilePicture ? (
-            <Image source={{ uri: member.profilePicture }} style={styles.memberAvatarImg} />
-          ) : (
-            <LinearGradient colors={[colors.primary, colors.primary + '88']} style={styles.memberAvatarGrad}>
-              <Text style={styles.memberAvatarText}>{initials}</Text>
-            </LinearGradient>
-          )}
+          <AvatarDisplay
+            profilePicture={member.profilePicture}
+            size={48}
+            initials={initials}
+            primaryColor={colors.primary}
+            static
+          />
         </View>
 
         <View style={{ flex: 1 }}>
@@ -976,9 +977,7 @@ const styles = StyleSheet.create({
   memberCard: { borderRadius: 14, borderWidth: 1, overflow: 'hidden' },
   memberRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 12, padding: 14 },
   memberAvatar: { width: 46, height: 46, borderRadius: 13, overflow: 'hidden', borderWidth: 1 },
-  memberAvatarImg: { width: '100%', height: '100%', resizeMode: 'cover' },
-  memberAvatarGrad: { width: '100%', height: '100%', alignItems: 'center', justifyContent: 'center' },
-  memberAvatarText: { fontSize: 16, fontFamily: 'Inter_700Bold', color: '#fff' },
+  // memberAvatarImg/Grad/Text removed — AvatarDisplay handles internally
   memberName: { fontSize: 14, fontFamily: 'Inter_600SemiBold' },
   memberId: { fontSize: 12, fontFamily: 'Inter_600SemiBold', letterSpacing: 0.4 },
   memberSub: { fontSize: 12, fontFamily: 'Inter_400Regular', marginTop: 1 },

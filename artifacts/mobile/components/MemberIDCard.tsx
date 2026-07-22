@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import {
-  StyleSheet, Text, Pressable, View, Dimensions, Image,
+  StyleSheet, Text, Pressable, View, Dimensions,
 } from 'react-native';
 import Animated, {
   interpolate, useAnimatedStyle, useSharedValue, withSpring, Extrapolate,
@@ -10,6 +10,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import QRCode from 'react-native-qrcode-svg';
 import { User } from '@/types';
 import { useColors } from '@/hooks/useColors';
+import { AvatarDisplay } from '@/components/CartoonAvatars';
 
 const { width: SCREEN_W } = Dimensions.get('window');
 const CARD_W = Math.min(SCREEN_W - 32, 380);
@@ -198,22 +199,16 @@ export function MemberIDCard({ user }: Props) {
             {/* Body */}
             <View style={styles.cardBody}>
               <View style={styles.cardLeft}>
-                {/* Avatar — profile picture if set, else initials circle */}
-                {user.profilePicture ? (
-                  <View style={[styles.cardAvatar, { borderColor: theme.accent + '60' }]}>
-                    <Image
-                      source={{ uri: user.profilePicture }}
-                      style={styles.cardAvatarImg}
-                    />
-                  </View>
-                ) : (
-                  <LinearGradient
-                    colors={[theme.accent + '55', theme.accent + '22']}
-                    style={[styles.cardAvatarFallback, { borderColor: theme.accent + '50' }]}
-                  >
-                    <Text style={[styles.cardAvatarText, { color: theme.accentAlt }]}>{initials}</Text>
-                  </LinearGradient>
-                )}
+                {/* Avatar */}
+                <View style={[styles.cardAvatar, { borderColor: theme.accent + '60' }]}>
+                  <AvatarDisplay
+                    profilePicture={user.profilePicture}
+                    size={52}
+                    initials={initials}
+                    primaryColor={theme.accent}
+                    static
+                  />
+                </View>
 
                 <View style={{ gap: 2, flex: 1 }}>
                   <Text style={styles.cardName} numberOfLines={1}>{user.fullName}</Text>
@@ -276,15 +271,15 @@ export function MemberIDCard({ user }: Props) {
             {/* Header strip — mirrors front */}
             <View style={styles.backHeaderStrip}>
               {/* Mini avatar on back header */}
-              {user.profilePicture ? (
-                <View style={styles.backAvatarMini}>
-                  <Image source={{ uri: user.profilePicture }} style={styles.backAvatarMiniImg} />
-                </View>
-              ) : (
-                <View style={[styles.backLogoMark, { backgroundColor: '#ffffff22' }]}>
-                  <Ionicons name={theme.icon} size={12} color="#fff" />
-                </View>
-              )}
+              <View style={styles.backAvatarMini}>
+                <AvatarDisplay
+                  profilePicture={user.profilePicture}
+                  size={28}
+                  initials={initials}
+                  primaryColor={theme.accent}
+                  static
+                />
+              </View>
               <Text style={styles.backOrgName}>MEMBER PROFILE</Text>
               <View style={styles.memberSincePill}>
                 <Ionicons name="time-outline" size={10} color="#fff" />

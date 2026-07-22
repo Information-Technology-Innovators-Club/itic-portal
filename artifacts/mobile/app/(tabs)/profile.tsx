@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator, Alert, Animated as RNAnimated, Platform, Pressable,
-  ScrollView, StyleSheet, Text, TouchableOpacity, View, Linking, Image, Modal,
+  ScrollView, StyleSheet, Text, TouchableOpacity, View, Linking, Modal,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Animated, { FadeInDown, FadeInUp } from 'react-native-reanimated';
@@ -17,6 +17,7 @@ import { GlassCard } from '@/components/GlassCard';
 import { MemberIDCard } from '@/components/MemberIDCard';
 import { StatusBadge, RoleBadge } from '@/components/ui/Badge';
 import { AttendanceRecord } from '@/types';
+import { AvatarDisplay, CartoonAvatar, AVATAR_SECTIONS } from '@/components/CartoonAvatars';
 
 // ── Icon maps ─────────────────────────────────────────────────────────────────
 const TECH_INTEREST_ICONS: Record<string, keyof typeof Ionicons.glyphMap> = {
@@ -43,75 +44,7 @@ const LANGUAGE_ICONS: Record<string, string> = {
   SQL: 'database', R: 'language-r',
 };
 
-// ── Beautiful DiceBear avatar library ─────────────────────────────────────────
-const AVATAR_SECTIONS = [
-  {
-    label: '🧑 Students',
-    avatars: [
-      'https://api.dicebear.com/9.x/open-peeps/svg?seed=Alex&backgroundColor=b6e3f4&skinColor=ecad80',
-      'https://api.dicebear.com/9.x/open-peeps/svg?seed=Jordan&backgroundColor=c0aede&skinColor=f2d3b1',
-      'https://api.dicebear.com/9.x/open-peeps/svg?seed=Casey&backgroundColor=ffd5dc&skinColor=ae5d29',
-      'https://api.dicebear.com/9.x/open-peeps/svg?seed=Riley&backgroundColor=ffdfbf&skinColor=d08b5b',
-      'https://api.dicebear.com/9.x/open-peeps/svg?seed=Morgan&backgroundColor=d1d4f9&skinColor=614335',
-      'https://api.dicebear.com/9.x/open-peeps/svg?seed=Avery&backgroundColor=b6e3f4&skinColor=f2d3b1',
-    ],
-  },
-  {
-    label: '🎨 Creative',
-    avatars: [
-      'https://api.dicebear.com/9.x/notionists/svg?seed=Dev1&backgroundColor=d1d4f9',
-      'https://api.dicebear.com/9.x/notionists/svg?seed=Dev2&backgroundColor=b6e3f4',
-      'https://api.dicebear.com/9.x/notionists/svg?seed=Dev3&backgroundColor=c0aede',
-      'https://api.dicebear.com/9.x/notionists/svg?seed=Dev4&backgroundColor=ffd5dc',
-      'https://api.dicebear.com/9.x/notionists/svg?seed=Dev5&backgroundColor=ffdfbf',
-      'https://api.dicebear.com/9.x/notionists/svg?seed=Dev6&backgroundColor=d1d4f9',
-    ],
-  },
-  {
-    label: '🤖 Tech',
-    avatars: [
-      'https://api.dicebear.com/9.x/bottts/svg?seed=Bot1&backgroundColor=b6e3f4',
-      'https://api.dicebear.com/9.x/bottts/svg?seed=Bot2&backgroundColor=c0aede',
-      'https://api.dicebear.com/9.x/bottts/svg?seed=Bot3&backgroundColor=ffd5dc',
-      'https://api.dicebear.com/9.x/bottts/svg?seed=Bot4&backgroundColor=d1d4f9',
-      'https://api.dicebear.com/9.x/bottts/svg?seed=Bot5&backgroundColor=ffdfbf',
-      'https://api.dicebear.com/9.x/bottts/svg?seed=Bot6&backgroundColor=b6e3f4',
-    ],
-  },
-  {
-    label: '😄 Fun',
-    avatars: [
-      'https://api.dicebear.com/9.x/adventurer/svg?seed=Exp1&backgroundColor=b6e3f4',
-      'https://api.dicebear.com/9.x/adventurer/svg?seed=Exp2&backgroundColor=ffdfbf',
-      'https://api.dicebear.com/9.x/adventurer/svg?seed=Exp3&backgroundColor=c0aede',
-      'https://api.dicebear.com/9.x/big-ears-neutral/svg?seed=Mem1&backgroundColor=ffd5dc',
-      'https://api.dicebear.com/9.x/big-ears-neutral/svg?seed=Mem2&backgroundColor=b6e3f4',
-      'https://api.dicebear.com/9.x/big-ears-neutral/svg?seed=Mem3&backgroundColor=d1d4f9',
-    ],
-  },
-  {
-    label: '🎭 Classic',
-    avatars: [
-      'https://api.dicebear.com/9.x/avataaars/svg?seed=ITIC1&backgroundColor=b6e3f4',
-      'https://api.dicebear.com/9.x/avataaars/svg?seed=ITIC2&backgroundColor=ffd5dc',
-      'https://api.dicebear.com/9.x/avataaars/svg?seed=ITIC3&backgroundColor=d1d4f9',
-      'https://api.dicebear.com/9.x/lorelei/svg?seed=Per1&backgroundColor=c0aede',
-      'https://api.dicebear.com/9.x/lorelei/svg?seed=Per2&backgroundColor=ffdfbf',
-      'https://api.dicebear.com/9.x/micah/svg?seed=User1&backgroundColor=b6e3f4',
-    ],
-  },
-  {
-    label: '🌟 Special',
-    avatars: [
-      'https://api.dicebear.com/9.x/pixel-art/svg?seed=Pix1&backgroundColor=b6e3f4',
-      'https://api.dicebear.com/9.x/pixel-art/svg?seed=Pix2&backgroundColor=c0aede',
-      'https://api.dicebear.com/9.x/pixel-art/svg?seed=Pix3&backgroundColor=ffd5dc',
-      'https://api.dicebear.com/9.x/thumbs/svg?seed=Thumb1&backgroundColor=d1d4f9',
-      'https://api.dicebear.com/9.x/thumbs/svg?seed=Thumb2&backgroundColor=ffdfbf',
-      'https://api.dicebear.com/9.x/thumbs/svg?seed=Thumb3&backgroundColor=b6e3f4',
-    ],
-  },
-];
+// AVATAR_SECTIONS imported from CartoonAvatars
 
 function openLink(url: string) {
   if (!url) return;
@@ -240,12 +173,12 @@ export default function ProfileScreen() {
   }, [user?.id]);
 
   // ── Avatar Actions ────────────────────────────────────────────────────────
-  async function selectDiceBearAvatar(url: string) {
+  async function selectCartoonAvatar(id: string) {
     if (updatingAvatar || !user) return;
     setUpdatingAvatar(true);
     try {
       await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-      await db.updateProfilePicture(user.id, url);
+      await db.updateProfilePicture(user.id, id);
       await refreshUser();
       showToast('success', 'Avatar updated!');
       setAvatarModal(false);
@@ -368,13 +301,12 @@ export default function ProfileScreen() {
         >
           <TouchableOpacity activeOpacity={0.85} onPress={() => setAvatarModal(true)} style={styles.avatarWrap}>
             <View style={[styles.avatarRing, { borderColor: colors.primary + '50' }]}>
-              {user.profilePicture ? (
-                <Image source={{ uri: user.profilePicture }} style={styles.avatarImg} />
-              ) : (
-                <LinearGradient colors={[colors.primary, colors.primary + '99']} style={styles.avatarGrad}>
-                  <Text style={styles.avatarInitials}>{initials}</Text>
-                </LinearGradient>
-              )}
+              <AvatarDisplay
+                profilePicture={user.profilePicture}
+                size={90}
+                initials={initials}
+                primaryColor={colors.primary}
+              />
             </View>
             <View style={[styles.cameraBtn, { backgroundColor: colors.primary, borderColor: colors.background }]}>
               <Ionicons name="camera" size={11} color="#fff" />
@@ -627,13 +559,13 @@ export default function ProfileScreen() {
                     <View key={section.label} style={{ marginBottom: 16 }}>
                       <Text style={[styles.sectionHeader, { color: colors.mutedForeground }]}>{section.label}</Text>
                       <View style={styles.avatarGrid}>
-                        {section.avatars.map((url, i) => {
-                          const isSelected = user.profilePicture === url;
+                        {section.avatars.map((id, i) => {
+                          const isSelected = user.profilePicture === id;
                           return (
                             <TouchableOpacity
                               key={i}
                               activeOpacity={0.75}
-                              onPress={() => selectDiceBearAvatar(url)}
+                              onPress={() => selectCartoonAvatar(id)}
                               style={[
                                 styles.avatarItem,
                                 {
@@ -643,7 +575,7 @@ export default function ProfileScreen() {
                                 },
                               ]}
                             >
-                              <Image source={{ uri: url }} style={styles.avatarImg2} />
+                              <CartoonAvatar id={id} size={60} static />
                               {isSelected && (
                                 <View style={[styles.selectedCheck, { backgroundColor: colors.primary }]}>
                                   <Ionicons name="checkmark" size={10} color="#fff" />
@@ -673,9 +605,7 @@ const styles = StyleSheet.create({
   hero: { alignItems: 'center', gap: 6, paddingBottom: 28, paddingHorizontal: 24 },
   avatarWrap: { position: 'relative', marginBottom: 8 },
   avatarRing: { width: 96, height: 96, borderRadius: 28, borderWidth: 3, overflow: 'hidden' },
-  avatarImg: { width: '100%', height: '100%', resizeMode: 'cover' },
-  avatarGrad: { width: '100%', height: '100%', alignItems: 'center', justifyContent: 'center' },
-  avatarInitials: { fontSize: 34, fontFamily: 'Inter_700Bold', color: '#fff' },
+  // avatarImg/Grad/Initials removed — AvatarDisplay handles internally
   cameraBtn: {
     position: 'absolute', bottom: -3, right: -3,
     width: 26, height: 26, borderRadius: 13,

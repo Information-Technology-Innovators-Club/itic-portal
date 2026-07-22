@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator, Modal, Platform, Pressable, RefreshControl, ScrollView,
-  StyleSheet, Text, TouchableOpacity, View, Image,
+  StyleSheet, Text, TouchableOpacity, View,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Animated, { FadeInDown, FadeInUp } from 'react-native-reanimated';
@@ -20,6 +20,7 @@ import { AnnouncementCard } from '@/components/AnnouncementCard';
 import { EventCard } from '@/components/EventCard';
 import { MemberIDCard } from '@/components/MemberIDCard';
 import { Announcement, Event } from '@/types';
+import { AvatarDisplay } from '@/components/CartoonAvatars';
 
 // Lazy camera import for self-check-in
 let CameraView: React.ComponentType<{
@@ -232,13 +233,12 @@ export default function HomeScreen() {
             <Text style={[styles.greetName, { color: colors.foreground }]}>{user?.fullName?.split(' ')[0] ?? 'Member'}</Text>
           </View>
           <TouchableOpacity onPress={() => router.push('/(tabs)/profile')} style={styles.greetAvatar}>
-            {user?.profilePicture ? (
-              <Image source={{ uri: user.profilePicture }} style={styles.greetAvatarImg} />
-            ) : (
-              <LinearGradient colors={[colors.primary, colors.primary + '99']} style={styles.greetAvatarGrad}>
-                <Text style={styles.greetAvatarText}>{initials}</Text>
-              </LinearGradient>
-            )}
+            <AvatarDisplay
+              profilePicture={user?.profilePicture}
+              size={44}
+              initials={initials}
+              primaryColor={colors.primary}
+            />
           </TouchableOpacity>
         </Animated.View>
 
@@ -412,13 +412,12 @@ export default function HomeScreen() {
               </View>
             </View>
             <TouchableOpacity onPress={() => router.push('/(tabs)/profile')} style={styles.greetAvatar}>
-              {user?.profilePicture ? (
-                <Image source={{ uri: user.profilePicture }} style={styles.greetAvatarImg} />
-              ) : (
-                <LinearGradient colors={[colors.primary, colors.primary + '99']} style={styles.greetAvatarGrad}>
-                  <Text style={styles.greetAvatarText}>{initials}</Text>
-                </LinearGradient>
-              )}
+              <AvatarDisplay
+                profilePicture={user?.profilePicture}
+                size={44}
+                initials={initials}
+                primaryColor={colors.primary}
+              />
             </TouchableOpacity>
           </View>
         </LinearGradient>
@@ -529,9 +528,7 @@ const styles = StyleSheet.create({
   greeting: { fontSize: 14, fontFamily: 'Inter_400Regular' },
   greetName: { fontSize: 26, fontFamily: 'Inter_700Bold', letterSpacing: -0.5 },
   greetAvatar: { width: 52, height: 52, borderRadius: 16, overflow: 'hidden' },
-  greetAvatarImg: { width: '100%', height: '100%', resizeMode: 'cover' },
-  greetAvatarGrad: { width: '100%', height: '100%', alignItems: 'center', justifyContent: 'center' },
-  greetAvatarText: { fontSize: 20, fontFamily: 'Inter_700Bold', color: '#fff' },
+  // greetAvatarImg/Grad/Text removed — AvatarDisplay handles internally
   execHero: { borderRadius: 20, padding: 16, paddingBottom: 20 },
   statsRow: { flexDirection: 'row', gap: 8 },
   pendingAlert: {
