@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import {
   ActivityIndicator, Platform, ScrollView, StyleSheet,
-  Text, TouchableOpacity, View, Alert, Linking,
+  Text, TouchableOpacity, View, Alert, Linking, Image, Modal,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Animated, { FadeInDown, FadeInUp } from 'react-native-reanimated';
@@ -49,6 +49,44 @@ const LANGUAGE_ICONS: Record<string, string> = {
   "SQL": "database",
   "R": "language-r",
 };
+const CARTOON_AVATARS = [
+  // Student community (open-peeps)
+  "https://api.dicebear.com/9.x/open-peeps/svg?seed=Student1&backgroundColor=b6e3f4",
+  "https://api.dicebear.com/9.x/open-peeps/svg?seed=Student2&backgroundColor=c0aede",
+  "https://api.dicebear.com/9.x/open-peeps/svg?seed=Student3&backgroundColor=ffd5dc",
+  "https://api.dicebear.com/9.x/open-peeps/svg?seed=Student4&backgroundColor=ffdfbf",
+
+  // Developers (notionists)
+  "https://api.dicebear.com/9.x/notionists/svg?seed=Developer1&backgroundColor=d1d4f9",
+  "https://api.dicebear.com/9.x/notionists/svg?seed=Developer2&backgroundColor=b6e3f4",
+  "https://api.dicebear.com/9.x/notionists/svg?seed=Developer3&backgroundColor=c0aede",
+
+  // Friendly members (big-ears-neutral)
+  "https://api.dicebear.com/9.x/big-ears-neutral/svg?seed=Member1&backgroundColor=ffdfbf",
+  "https://api.dicebear.com/9.x/big-ears-neutral/svg?seed=Member2&backgroundColor=c0aede",
+  "https://api.dicebear.com/9.x/big-ears-neutral/svg?seed=Member3&backgroundColor=ffd5dc",
+
+  // Classic avatars (avataaars)
+  "https://api.dicebear.com/9.x/avataaars/svg?seed=ITIC1&backgroundColor=b6e3f4",
+  "https://api.dicebear.com/9.x/avataaars/svg?seed=ITIC2&backgroundColor=ffd5dc",
+  "https://api.dicebear.com/9.x/avataaars/svg?seed=ITIC3&backgroundColor=d1d4f9",
+
+  // Adventurer style
+  "https://api.dicebear.com/9.x/adventurer/svg?seed=Explorer1&backgroundColor=b6e3f4",
+  "https://api.dicebear.com/9.x/adventurer/svg?seed=Explorer2&backgroundColor=ffdfbf",
+
+  // Lorelei style
+  "https://api.dicebear.com/9.x/lorelei/svg?seed=Person1&backgroundColor=c0aede",
+  "https://api.dicebear.com/9.x/lorelei/svg?seed=Person2&backgroundColor=ffd5dc",
+
+  // Micah style
+  "https://api.dicebear.com/9.x/micah/svg?seed=User1&backgroundColor=b6e3f4",
+  "https://api.dicebear.com/9.x/micah/svg?seed=User2&backgroundColor=d1d4f9",
+
+  // Personas style
+  "https://api.dicebear.com/9.x/personas/svg?seed=Persona1&backgroundColor=ffdfbf",
+  "https://api.dicebear.com/9.x/personas/svg?seed=Persona2&backgroundColor=c0aede",
+];
 
 function openLink(url: string) {
   if (!url) return;
@@ -76,12 +114,31 @@ function InfoRow({ icon, label, value }: { icon: keyof typeof Ionicons.glyphMap;
 export default function ProfileScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
-  const { user, logout } = useAuth();
+  const { user, logout, refreshUser } = useAuth();
   const { showToast } = useToast();
   const [attendance, setAttendance] = useState<AttendanceRecord[]>([]);
   const [loading, setLoading] = useState(true);
   const [signingOut, setSigningOut] = useState(false);
+  const [avatarModalVisible, setAvatarModalVisible] = useState(false);
+  const [updatingAvatar, setUpdatingAvatar] = useState(false);
   const topPad = Platform.OS === 'web' ? 24 : insets.top + 8;
+
+  async function selectAvatar(url: string) {
+    if (updatingAvatar || !user) return;
+    setUpdatingAvatar(true);
+    try {
+      await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      await db.updateProfilePicture(user.id, url);
+      await refreshUser();
+      showToast('success', 'Avatar updated', 'Your profile picture has been updated!');
+      setAvatarModalVisible(false);
+    } catch (err) {
+      console.error(err);
+      showToast('error', 'Update failed', 'Could not update profile picture.');
+    } finally {
+      setUpdatingAvatar(false);
+    }
+  }
 
   useEffect(() => {
     if (!user) { setLoading(false); return; }
@@ -139,14 +196,28 @@ export default function ProfileScreen() {
     >
       {/* Profile Header */}
       <Animated.View entering={FadeInDown.delay(0).springify()} style={styles.profileHeader}>
-        <View style={styles.avatarWrap}>
-          <LinearGradient
-            colors={[colors.primary, colors.primary + '88']}
-            style={styles.avatarGradient}
-          >
-            <Text style={styles.avatarText}>{initials}</Text>
-          </LinearGradient>
-        </View>
+        <TouchableOpacity
+          activeOpacity={0.85}
+          onPress={() => setAvatarModalVisible(true)}
+          style={styles.avatarWrap}
+        >
+          {user.profilePicture ? (
+            <Image
+              source={{ uri: user.profilePicture }}
+              style={styles.avatarImage}
+            />
+          ) : (
+            <LinearGradient
+              colors={[colors.primary, colors.primary + '88']}
+              style={styles.avatarGradient}
+            >
+              <Text style={styles.avatarText}>{initials}</Text>
+            </LinearGradient>
+          )}
+          <View style={[styles.avatarEditBadge, { backgroundColor: colors.primary }]}>
+            <Ionicons name="camera" size={10} color="#fff" />
+          </View>
+        </TouchableOpacity>
         <View style={styles.headerTextWrap}>
           <Text style={[styles.profileName, { color: colors.foreground }]}>
             {user.fullName}
@@ -396,6 +467,65 @@ export default function ProfileScreen() {
           </Text>
         </TouchableOpacity>
       </Animated.View>
+
+      {/* Avatar Picker Modal */}
+      <Modal
+        visible={avatarModalVisible}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setAvatarModalVisible(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <Animated.View 
+            entering={FadeInDown.springify()} 
+            style={[styles.modalContent, { backgroundColor: colors.card, borderColor: colors.border }]}
+          >
+            <View style={styles.modalHeader}>
+              <Text style={[styles.modalTitle, { color: colors.foreground }]}>Choose Avatar</Text>
+              <TouchableOpacity
+                onPress={() => setAvatarModalVisible(false)}
+                style={[styles.closeBtn, { backgroundColor: colors.muted }]}
+              >
+                <Ionicons name="close" size={18} color={colors.foreground} />
+              </TouchableOpacity>
+            </View>
+            
+            <Text style={[styles.modalSub, { color: colors.mutedForeground }]}>
+              Select a cartoon mascot avatar to represent your profile
+            </Text>
+
+            {updatingAvatar ? (
+              <View style={styles.modalLoading}>
+                <ActivityIndicator color={colors.primary} size="large" />
+                <Text style={[styles.loadingText, { color: colors.mutedForeground }]}>Updating profile...</Text>
+              </View>
+            ) : (
+              <ScrollView contentContainerStyle={styles.avatarGrid} showsVerticalScrollIndicator={false}>
+                {CARTOON_AVATARS.map((url, index) => {
+                  const isSelected = user.profilePicture === url;
+                  return (
+                    <TouchableOpacity
+                      key={index}
+                      activeOpacity={0.75}
+                      onPress={() => selectAvatar(url)}
+                      style={[
+                        styles.avatarItem,
+                        {
+                          borderColor: isSelected ? colors.primary : colors.border,
+                          backgroundColor: isSelected ? colors.primary + '10' : colors.background,
+                          borderWidth: isSelected ? 2 : 1,
+                        }
+                      ]}
+                    >
+                      <Image source={{ uri: url }} style={styles.gridAvatar} />
+                    </TouchableOpacity>
+                  );
+                })}
+              </ScrollView>
+            )}
+          </Animated.View>
+        </View>
+      </Modal>
     </ScrollView>
   );
 }
@@ -406,9 +536,16 @@ const styles = StyleSheet.create({
   pageTitle: { fontSize: 28, fontFamily: 'Inter_700Bold', letterSpacing: -0.5 },
   pageSub: { fontSize: 13, fontFamily: 'Inter_400Regular', marginTop: 2 },
   profileHeader: { flexDirection: 'row', alignItems: 'center', gap: 16, paddingVertical: 12, marginBottom: 4 },
-  avatarWrap: { width: 68, height: 68, borderRadius: 22, overflow: 'hidden' },
-  avatarGradient: { width: '100%', height: '100%', alignItems: 'center', justifyContent: 'center' },
+  avatarWrap: { width: 68, height: 68, position: 'relative' },
+  avatarGradient: { width: '100%', height: '100%', borderRadius: 22, alignItems: 'center', justifyContent: 'center', overflow: 'hidden' },
   avatarText: { fontSize: 26, fontFamily: 'Inter_700Bold', color: '#fff' },
+  avatarImage: { width: '100%', height: '100%', borderRadius: 22 },
+  avatarEditBadge: {
+    position: 'absolute', bottom: -2, right: -2,
+    width: 20, height: 20, borderRadius: 10,
+    alignItems: 'center', justifyContent: 'center',
+    borderWidth: 1.5, borderColor: '#fff',
+  },
   headerTextWrap: { flex: 1, gap: 3 },
   profileName: { fontSize: 20, fontFamily: 'Inter_700Bold', letterSpacing: -0.3 },
   profileId: { fontSize: 13, fontFamily: 'Inter_600SemiBold', letterSpacing: 0.3 },
@@ -443,4 +580,15 @@ const styles = StyleSheet.create({
     gap: 10, paddingVertical: 14, borderWidth: 1,
   },
   signOutText: { fontSize: 15, fontFamily: 'Inter_600SemiBold' },
+  modalOverlay: { flex: 1, backgroundColor: 'rgba(0, 0, 0, 0.5)', justifyContent: 'flex-end' },
+  modalContent: { borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 24, maxHeight: '75%', gap: 16, borderWidth: 1 },
+  modalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  modalTitle: { fontSize: 18, fontFamily: 'Inter_700Bold' },
+  modalSub: { fontSize: 13, fontFamily: 'Inter_400Regular', marginTop: -4 },
+  closeBtn: { width: 28, height: 28, borderRadius: 14, alignItems: 'center', justifyContent: 'center' },
+  modalLoading: { alignItems: 'center', gap: 12, paddingVertical: 40 },
+  loadingText: { fontSize: 14, fontFamily: 'Inter_500Medium' },
+  avatarGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 12, justifyContent: 'space-between', paddingVertical: 12 },
+  avatarItem: { width: '30%', aspectRatio: 1, borderRadius: 20, padding: 6, justifyContent: 'center', alignItems: 'center' },
+  gridAvatar: { width: '100%', height: '100%', resizeMode: 'contain' },
 });

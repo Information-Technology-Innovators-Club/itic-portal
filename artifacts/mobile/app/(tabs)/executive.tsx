@@ -2,11 +2,12 @@ import React, { useCallback, useEffect, useState } from 'react';
 import {
   ActivityIndicator, Alert, FlatList, Modal, Platform,
   RefreshControl, ScrollView, StyleSheet, Text, TextInput,
-  TouchableOpacity, View,
+  TouchableOpacity, View, Image, Linking,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Animated, { FadeInDown, FadeInUp } from 'react-native-reanimated';
 import { Ionicons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
 import * as Haptics from 'expo-haptics';
 import { useColors } from '@/hooks/useColors';
 import { useAuth } from '@/context/AuthContext';
@@ -39,52 +40,167 @@ function MemberRow({ member, currentUser, onAction }: {
   onAction: (m: User, action: 'approve' | 'deactivate' | 'suspend' | 'role') => void;
 }) {
   const colors = useColors();
+  const [expanded, setExpanded] = React.useState(false);
+
+  const handleEmail = () => {
+    if (member.email) {
+      Linking.openURL(`mailto:${member.email}`).catch(() => {});
+    }
+  };
+
   return (
-    <View style={[styles.memberRow, { backgroundColor: colors.card, borderColor: colors.border }]}>
-      <View style={[styles.memberAvatar, { backgroundColor: colors.primary }]}>
-        <Text style={styles.memberAvatarText}>{member.fullName.charAt(0)}</Text>
-      </View>
-      <View style={{ flex: 1 }}>
-        <Text style={[styles.memberName, { color: colors.foreground }]} numberOfLines={1}>{member.fullName}</Text>
-        <Text style={[styles.memberId, { color: colors.primary }]}>{member.memberId}</Text>
-        <Text style={[styles.memberSub, { color: colors.mutedForeground }]} numberOfLines={1}>
-          {member.programme || member.faculty}
-        </Text>
-        <View style={{ flexDirection: 'row', gap: 5, marginTop: 4 }}>
-          <StatusBadge status={member.status} />
-          <RoleBadge role={member.role} />
-        </View>
-      </View>
-      {member.id !== currentUser.id && (
-        <View style={{ gap: 6 }}>
-          {member.status === 'pending' && (
-            <TouchableOpacity
-              style={[styles.actionBtn, { backgroundColor: '#16a34a15', borderColor: '#16a34a30' }]}
-              onPress={() => onAction(member, 'approve')}
+    <TouchableOpacity
+      activeOpacity={0.9}
+      onPress={() => setExpanded(!expanded)}
+      style={[
+        styles.memberRowContainer,
+        {
+          backgroundColor: colors.card,
+          borderColor: colors.border,
+        }
+      ]}
+    >
+      <View style={styles.memberRowHeader}>
+        {/* Avatar */}
+        <View style={styles.memberAvatarWrap}>
+          {member.profilePicture ? (
+            <Image source={{ uri: member.profilePicture }} style={styles.memberAvatarImage} />
+          ) : (
+            <LinearGradient
+              colors={[colors.primary, colors.primary + '88']}
+              style={styles.memberAvatarGradient}
             >
-              <Ionicons name="checkmark" size={14} color="#16a34a" />
-              <Text style={[styles.actionBtnText, { color: '#16a34a' }]}>Approve</Text>
-            </TouchableOpacity>
+              <Text style={styles.memberAvatarText}>{member.fullName.charAt(0).toUpperCase()}</Text>
+            </LinearGradient>
           )}
-          {member.status === 'active' && (
-            <TouchableOpacity
-              style={[styles.actionBtn, { backgroundColor: '#f59e0b15', borderColor: '#f59e0b30' }]}
-              onPress={() => onAction(member, 'deactivate')}
-            >
-              <Ionicons name="pause" size={14} color="#f59e0b" />
-              <Text style={[styles.actionBtnText, { color: '#f59e0b' }]}>Deactivate</Text>
-            </TouchableOpacity>
-          )}
-          <TouchableOpacity
-            style={[styles.actionBtn, { backgroundColor: '#3b82f615', borderColor: '#3b82f630' }]}
-            onPress={() => onAction(member, 'role')}
-          >
-            <Ionicons name="shield-outline" size={14} color="#3b82f6" />
-            <Text style={[styles.actionBtnText, { color: '#3b82f6' }]}>Role</Text>
-          </TouchableOpacity>
         </View>
+
+        {/* Text info */}
+        <View style={{ flex: 1 }}>
+          <Text style={[styles.memberName, { color: colors.foreground }]} numberOfLines={1}>
+            {member.fullName}
+          </Text>
+          <Text style={[styles.memberId, { color: colors.primary }]}>{member.memberId}</Text>
+          <Text style={[styles.memberSub, { color: colors.mutedForeground }]} numberOfLines={1}>
+            {member.programme || member.faculty}
+          </Text>
+          <View style={{ flexDirection: 'row', gap: 5, marginTop: 4 }}>
+            <StatusBadge status={member.status} />
+            <RoleBadge role={member.role} />
+          </View>
+        </View>
+
+        {/* Chevron indicator */}
+        <Ionicons
+          name={expanded ? 'chevron-up' : 'chevron-down'}
+          size={18}
+          color={colors.mutedForeground}
+          style={{ alignSelf: 'center', marginLeft: 8 }}
+        />
+      </View>
+
+      {/* Expanded drawer details */}
+      {expanded && (
+        <Animated.View entering={FadeInUp.duration(200)} style={styles.expandedDrawer}>
+          <View style={[styles.drawerDivider, { backgroundColor: colors.border }]} />
+
+          {/* Academic Profile */}
+          <Text style={[styles.drawerSectionTitle, { color: colors.foreground }]}>Academic Details</Text>
+          <View style={styles.detailGrid}>
+            <View style={styles.detailItem}>
+              <Text style={[styles.detailLabel, { color: colors.mutedForeground }]}>Faculty</Text>
+              <Text style={[styles.detailValue, { color: colors.foreground }]}>{member.faculty || 'N/A'}</Text>
+            </View>
+            <View style={styles.detailItem}>
+              <Text style={[styles.detailLabel, { color: colors.mutedForeground }]}>Department</Text>
+              <Text style={[styles.detailValue, { color: colors.foreground }]}>{member.programme || 'N/A'}</Text>
+            </View>
+            <View style={styles.detailItem}>
+              <Text style={[styles.detailLabel, { color: colors.mutedForeground }]}>Academic Level</Text>
+              <Text style={[styles.detailValue, { color: colors.foreground }]}>Lvl {member.level || 'N/A'}</Text>
+            </View>
+            <View style={styles.detailItem}>
+              <Text style={[styles.detailLabel, { color: colors.mutedForeground }]}>Has Laptop</Text>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 2 }}>
+                <Ionicons
+                  name={member.hasLaptop ? 'checkmark-circle' : 'close-circle'}
+                  size={14}
+                  color={member.hasLaptop ? '#22c55e' : '#ef4444'}
+                />
+                <Text style={[styles.detailValue, { color: colors.foreground, marginTop: 0 }]}>
+                  {member.hasLaptop ? 'Yes' : 'No'}
+                </Text>
+              </View>
+            </View>
+          </View>
+
+          {/* Skills & Interests Profile */}
+          {((member.interests && member.interests.length > 0) || (member.languages && member.languages.length > 0)) && (
+            <>
+              <Text style={[styles.drawerSectionTitle, { color: colors.foreground, marginTop: 12 }]}>Skills & Interests</Text>
+              <View style={styles.skillsTagWrap}>
+                {member.interests?.map((interest: string) => (
+                  <View key={interest} style={[styles.skillTag, { backgroundColor: colors.muted, borderColor: colors.border }]}>
+                    <Text style={[styles.skillTagText, { color: colors.foreground }]}>{interest}</Text>
+                  </View>
+                ))}
+                {member.languages?.map((lang: string) => (
+                  <View key={lang} style={[styles.skillTag, { backgroundColor: colors.primary + '10', borderColor: colors.primary + '30' }]}>
+                    <Text style={[styles.skillTagText, { color: colors.primary, fontFamily: 'Inter_600SemiBold' }]}>{lang}</Text>
+                  </View>
+                ))}
+              </View>
+            </>
+          )}
+
+          {/* Contact Details */}
+          <Text style={[styles.drawerSectionTitle, { color: colors.foreground, marginTop: 12 }]}>Contact Info</Text>
+          <View style={styles.contactRow}>
+            <TouchableOpacity
+              activeOpacity={0.7}
+              onPress={handleEmail}
+              style={[styles.contactCard, { backgroundColor: colors.muted, borderColor: colors.border }]}
+            >
+              <Ionicons name="mail-outline" size={16} color={colors.primary} />
+              <Text style={[styles.contactText, { color: colors.foreground }]} numberOfLines={1}>
+                {member.email}
+              </Text>
+            </TouchableOpacity>
+          </View>
+
+          {/* Action Row */}
+          {member.id !== currentUser.id && (
+            <View style={styles.actionRow}>
+              {member.status === 'pending' && (
+                <TouchableOpacity
+                  style={[styles.drawerActionBtn, { backgroundColor: '#22c55e', borderColor: '#22c55e' }]}
+                  onPress={() => onAction(member, 'approve')}
+                >
+                  <Ionicons name="checkmark-circle-outline" size={15} color="#fff" />
+                  <Text style={[styles.drawerActionBtnText, { color: '#fff' }]}>Approve Member</Text>
+                </TouchableOpacity>
+              )}
+              {member.status === 'active' && (
+                <TouchableOpacity
+                  style={[styles.drawerActionBtn, { backgroundColor: '#f59e0b15', borderColor: '#f59e0b30' }]}
+                  onPress={() => onAction(member, 'deactivate')}
+                >
+                  <Ionicons name="pause" size={15} color="#f59e0b" />
+                  <Text style={[styles.drawerActionBtnText, { color: '#f59e0b' }]}>Deactivate</Text>
+                </TouchableOpacity>
+              )}
+              <TouchableOpacity
+                style={[styles.drawerActionBtn, { backgroundColor: '#3b82f615', borderColor: '#3b82f630' }]}
+                onPress={() => onAction(member, 'role')}
+              >
+                <Ionicons name="shield-half-outline" size={15} color="#3b82f6" />
+                <Text style={[styles.drawerActionBtnText, { color: '#3b82f6' }]}>Change Role</Text>
+              </TouchableOpacity>
+            </View>
+          )}
+        </Animated.View>
       )}
-    </View>
+    </TouchableOpacity>
   );
 }
 
@@ -118,6 +234,36 @@ export default function ExecutiveScreen() {
   const [evtVenue, setEvtVenue] = useState('');
   const [evtMax, setEvtMax] = useState('100');
   const [evtLoading, setEvtLoading] = useState(false);
+
+  const dateChips = [
+    { label: 'Today', value: new Date().toISOString().split('T')[0] },
+    { label: 'Tomorrow', value: (() => {
+        const d = new Date();
+        d.setDate(d.getDate() + 1);
+        return d.toISOString().split('T')[0];
+      })()
+    },
+    { label: 'Next Fri', value: (() => {
+        const d = new Date();
+        const diff = (5 + 7 - d.getDay()) % 7;
+        const target = new Date();
+        target.setDate(d.getDate() + (diff === 0 ? 7 : diff));
+        return target.toISOString().split('T')[0];
+      })()
+    },
+    { label: 'Next Sat', value: (() => {
+        const d = new Date();
+        const diff = (6 + 7 - d.getDay()) % 7;
+        const target = new Date();
+        target.setDate(d.getDate() + (diff === 0 ? 7 : diff));
+        return target.toISOString().split('T')[0];
+      })()
+    },
+  ];
+
+  const timeChips = ['09:00 AM', '12:00 PM', '02:00 PM', '04:30 PM', '06:00 PM'];
+  const venueChips = ['Computer Lab 3', 'Seminar Room B', 'Main Hall', 'Online Zoom'];
+  const maxChips = ['30', '50', '100', '200'];
 
   const load = useCallback(async () => {
     try {
@@ -503,9 +649,57 @@ export default function ExecutiveScreen() {
               />
             </View>
             <Input label="Date *" placeholder="YYYY-MM-DD" value={evtDate} onChangeText={setEvtDate} leftIcon="calendar" />
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.quickFillScroll} contentContainerStyle={styles.quickFillContent}>
+              {dateChips.map(c => (
+                <TouchableOpacity
+                  key={c.label}
+                  onPress={() => setEvtDate(c.value)}
+                  style={[styles.quickFillChip, { backgroundColor: colors.muted, borderColor: colors.border }]}
+                >
+                  <Text style={[styles.quickFillText, { color: colors.foreground }]}>{c.label}</Text>
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+
             <Input label="Time" placeholder="e.g. 09:00" value={evtTime} onChangeText={setEvtTime} leftIcon="time-outline" />
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.quickFillScroll} contentContainerStyle={styles.quickFillContent}>
+              {timeChips.map(t => (
+                <TouchableOpacity
+                  key={t}
+                  onPress={() => setEvtTime(t)}
+                  style={[styles.quickFillChip, { backgroundColor: colors.muted, borderColor: colors.border }]}
+                >
+                  <Text style={[styles.quickFillText, { color: colors.foreground }]}>{t}</Text>
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+
             <Input label="Venue *" placeholder="e.g. Computer Lab 3, Block C" value={evtVenue} onChangeText={setEvtVenue} leftIcon="location-outline" />
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.quickFillScroll} contentContainerStyle={styles.quickFillContent}>
+              {venueChips.map(v => (
+                <TouchableOpacity
+                  key={v}
+                  onPress={() => setEvtVenue(v)}
+                  style={[styles.quickFillChip, { backgroundColor: colors.muted, borderColor: colors.border }]}
+                >
+                  <Text style={[styles.quickFillText, { color: colors.foreground }]}>{v}</Text>
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+
             <Input label="Max Attendees" placeholder="100" value={evtMax} onChangeText={setEvtMax} keyboardType="numeric" leftIcon="people-outline" />
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.quickFillScroll} contentContainerStyle={styles.quickFillContent}>
+              {maxChips.map(m => (
+                <TouchableOpacity
+                  key={m}
+                  onPress={() => setEvtMax(m)}
+                  style={[styles.quickFillChip, { backgroundColor: colors.muted, borderColor: colors.border }]}
+                >
+                  <Text style={[styles.quickFillText, { color: colors.foreground }]}>{m} seats</Text>
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+
             <Button title="Create Event" onPress={submitEvent} loading={evtLoading} />
           </ScrollView>
         </View>
@@ -533,25 +727,87 @@ const styles = StyleSheet.create({
   },
   pendingText: { fontSize: 13, fontFamily: 'Inter_500Medium', color: '#92400e' },
   resultCount: { fontSize: 12, fontFamily: 'Inter_400Regular' },
-  memberRow: {
-    flexDirection: 'row', alignItems: 'flex-start', gap: 12, padding: 14,
-    borderRadius: 14, borderWidth: 1,
+  memberRowContainer: {
+    borderRadius: 14, borderWidth: 1, padding: 14, marginBottom: 8,
     shadowColor: '#000', shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.03, shadowRadius: 4, elevation: 1,
   },
-  memberAvatar: {
-    width: 44, height: 44, borderRadius: 13,
-    alignItems: 'center', justifyContent: 'center',
+  memberRowHeader: {
+    flexDirection: 'row', alignItems: 'flex-start', gap: 12,
+  },
+  memberAvatarWrap: {
+    width: 44, height: 44, borderRadius: 13, overflow: 'hidden',
+  },
+  memberAvatarImage: {
+    width: '100%', height: '100%', resizeMode: 'contain',
+  },
+  memberAvatarGradient: {
+    width: '100%', height: '100%', alignItems: 'center', justifyContent: 'center',
   },
   memberAvatarText: { fontSize: 18, fontFamily: 'Inter_700Bold', color: '#fff' },
   memberName: { fontSize: 14, fontFamily: 'Inter_600SemiBold' },
   memberId: { fontSize: 12, fontFamily: 'Inter_600SemiBold', letterSpacing: 0.3 },
   memberSub: { fontSize: 11, fontFamily: 'Inter_400Regular' },
-  actionBtn: {
-    flexDirection: 'row', alignItems: 'center', gap: 4,
+  expandedDrawer: {
+    marginTop: 14, gap: 10,
+  },
+  drawerDivider: {
+    height: 1, marginBottom: 8,
+  },
+  drawerSectionTitle: {
+    fontSize: 11, fontFamily: 'Inter_700Bold', textTransform: 'uppercase', letterSpacing: 0.5,
+  },
+  detailGrid: {
+    flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginTop: 4,
+  },
+  detailItem: {
+    width: '47%', paddingVertical: 4,
+  },
+  detailLabel: {
+    fontSize: 10, fontFamily: 'Inter_500Medium',
+  },
+  detailValue: {
+    fontSize: 13, fontFamily: 'Inter_600SemiBold', marginTop: 2,
+  },
+  skillsTagWrap: {
+    flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginTop: 4,
+  },
+  skillTag: {
     paddingHorizontal: 8, paddingVertical: 4, borderRadius: 8, borderWidth: 1,
   },
-  actionBtnText: { fontSize: 11, fontFamily: 'Inter_600SemiBold' },
+  skillTagText: {
+    fontSize: 11, fontFamily: 'Inter_500Medium',
+  },
+  contactRow: {
+    flexDirection: 'row', marginTop: 4,
+  },
+  contactCard: {
+    flex: 1, flexDirection: 'row', alignItems: 'center', gap: 8, padding: 10, borderRadius: 10, borderWidth: 1,
+  },
+  contactText: {
+    fontSize: 12, fontFamily: 'Inter_500Medium',
+  },
+  actionRow: {
+    flexDirection: 'row', gap: 8, marginTop: 12,
+  },
+  drawerActionBtn: {
+    flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, paddingVertical: 8, borderRadius: 10, borderWidth: 1,
+  },
+  drawerActionBtnText: {
+    fontSize: 12, fontFamily: 'Inter_600SemiBold',
+  },
+  quickFillScroll: {
+    marginTop: 4, marginBottom: 8,
+  },
+  quickFillContent: {
+    gap: 6,
+  },
+  quickFillChip: {
+    paddingHorizontal: 12, paddingVertical: 6, borderRadius: 12, borderWidth: 1,
+  },
+  quickFillText: {
+    fontSize: 11, fontFamily: 'Inter_500Medium',
+  },
   createBtn: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
     gap: 8, padding: 14, borderRadius: 14, borderWidth: 1,

@@ -262,6 +262,11 @@ export async function updateUserRole(userId: string, role: UserRole): Promise<vo
   if (error) throw new Error(error.message);
 }
 
+export async function updateProfilePicture(userId: string, avatarUrl: string): Promise<void> {
+  const { error } = await supabase.from('profiles').update({ profile_picture: avatarUrl }).eq('id', userId);
+  if (error) throw new Error(error.message);
+}
+
 // ─── Announcements ───────────────────────────────────────────────────────────
 
 export async function getAnnouncements(): Promise<Announcement[]> {
