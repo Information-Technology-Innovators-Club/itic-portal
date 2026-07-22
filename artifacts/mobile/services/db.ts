@@ -8,7 +8,7 @@ import {
   MemberStatus, UserRole, Gender, ExperienceLevel,
 } from '@/types';
 
-// ─── Mapping helpers ────────────────────────────────────────────────────────
+// ─── Mapping helpers ──────────────────────────────────────────────────────────
 
 function mapProfile(r: Record<string, unknown>): User {
   return {
@@ -105,7 +105,7 @@ function generateMemberId(count: number): string {
   return `ITIC-${year}-${String(count).padStart(4, '0')}`;
 }
 
-// ─── Auth operations ─────────────────────────────────────────────────────────
+// ─── Auth operations ──────────────────────────────────────────────────────────
 
 export async function loginUser(email: string, password: string): Promise<User> {
   const { error } = await supabase.auth.signInWithPassword({ email, password });
@@ -125,7 +125,6 @@ export async function loginUser(email: string, password: string): Promise<User> 
 }
 
 export async function registerUser(data: RegisterFormData): Promise<User> {
-  // Create auth user
   const { data: authData, error: authError } = await supabase.auth.signUp({
     email: data.email,
     password: data.password,
@@ -133,7 +132,6 @@ export async function registerUser(data: RegisterFormData): Promise<User> {
   if (authError) throw new Error(authError.message);
   if (!authData.user) throw new Error('Registration failed. Please try again.');
 
-  // Count existing members to assign sequential ID
   const { count } = await supabase
     .from('profiles')
     .select('id', { count: 'exact', head: true });
@@ -188,10 +186,7 @@ export async function checkStudentNumberExists(studentNumber: string): Promise<b
     .select('id')
     .eq('student_number', studentNumber.trim())
     .maybeSingle();
-  if (error) {
-    console.error('Error checking student number exists:', error);
-    return false;
-  }
+  if (error) return false;
   return !!data;
 }
 
@@ -212,7 +207,7 @@ export async function logoutUser(): Promise<void> {
   await supabase.auth.signOut();
 }
 
-// ─── Profile operations ──────────────────────────────────────────────────────
+// ─── Profile operations ───────────────────────────────────────────────────────
 
 export async function getAllMembers(): Promise<User[]> {
   const { data, error } = await supabase
@@ -234,26 +229,17 @@ export async function getMemberByMemberId(memberId: string): Promise<User | null
 }
 
 export async function approveUser(userId: string): Promise<void> {
-  const { error } = await supabase
-    .from('profiles')
-    .update({ status: 'active' })
-    .eq('id', userId);
+  const { error } = await supabase.from('profiles').update({ status: 'active' }).eq('id', userId);
   if (error) throw new Error(error.message);
 }
 
 export async function deactivateUser(userId: string): Promise<void> {
-  const { error } = await supabase
-    .from('profiles')
-    .update({ status: 'inactive' })
-    .eq('id', userId);
+  const { error } = await supabase.from('profiles').update({ status: 'inactive' }).eq('id', userId);
   if (error) throw new Error(error.message);
 }
 
 export async function suspendUser(userId: string): Promise<void> {
-  const { error } = await supabase
-    .from('profiles')
-    .update({ status: 'suspended' })
-    .eq('id', userId);
+  const { error } = await supabase.from('profiles').update({ status: 'suspended' }).eq('id', userId);
   if (error) throw new Error(error.message);
 }
 
@@ -267,7 +253,61 @@ export async function updateProfilePicture(userId: string, avatarUrl: string): P
   if (error) throw new Error(error.message);
 }
 
-// ─── Announcements ───────────────────────────────────────────────────────────
+export interface ProfileUpdates {
+  githubUsername?: string;
+  linkedIn?: string;
+  portfolio?: string;
+  technologyInterests?: string[];
+  programmingLanguages?: string[];
+  experienceLevel?: ExperienceLevel;
+  hasLaptop?: boolean;
+  phone?: string;
+}
+
+export async function updateProfile(userId: string, updates: ProfileUpdates): Promise<void> {
+  const row: Record<string, unknown> = {};
+  if (updates.githubUsername !== undefined) row.github_username = updates.githubUsername;
+  if (updates.linkedIn !== undefined) row.linked_in = updates.linkedIn;
+  if (updates.portfolio !== undefined) row.portfolio = updates.portfolio;
+  if (updates.technologyInterests !== undefined) row.technology_interests = updates.technologyInterests;
+  if (updates.programmingLanguages !== undefined) row.programming_languages = updates.programmingLanguages;
+  if (updates.experienceLevel !== undefined) row.experience_level = updates.experienceLevel;
+  if (updates.hasLaptop !== undefined) row.has_laptop = updates.hasLaptop;
+  if (updates.phone !== undefined) row.phone = updates.phone;
+
+  // Recalculate completeness after update
+  const { data: current } = await supabase.from('profiles').select('*').eq('id', userId).single();
+  if (current) {
+    const merged = { ...current, ...row };
+    row.profile_completeness = calcCompleteness({
+      fullName: merged.full_name,
+      studentNumber: merged.student_number,
+      email: merged.email,
+      phone: merged.phone,
+      gender: merged.gender,
+      dateOfBirth: merged.date_of_birth,
+      faculty: merged.faculty,
+      department: merged.department,
+      programme: merged.programme,
+      academicLevel: merged.academic_level,
+      semester: merged.semester,
+      technologyInterests: merged.technology_interests ?? [],
+      programmingLanguages: merged.programming_languages ?? [],
+      experienceLevel: merged.experience_level,
+      githubUsername: merged.github_username,
+      linkedIn: merged.linked_in,
+      portfolio: merged.portfolio,
+      hasLaptop: merged.has_laptop,
+      password: '',
+      agreedToTerms: true,
+    });
+  }
+
+  const { error } = await supabase.from('profiles').update(row).eq('id', userId);
+  if (error) throw new Error(error.message);
+}
+
+// ─── Announcements ────────────────────────────────────────────────────────────
 
 export async function getAnnouncements(): Promise<Announcement[]> {
   const { data, error } = await supabase
@@ -317,7 +357,7 @@ export async function deleteAnnouncement(id: string): Promise<void> {
   if (error) throw new Error(error.message);
 }
 
-// ─── Events ──────────────────────────────────────────────────────────────────
+// ─── Events ───────────────────────────────────────────────────────────────────
 
 export async function getEvents(): Promise<Event[]> {
   const { data, error } = await supabase
@@ -361,7 +401,10 @@ export async function updateEvent(id: string, updates: Partial<Event>): Promise<
   if (updates.description !== undefined) row.description = updates.description;
   if (updates.status !== undefined) row.status = updates.status;
   if (updates.venue !== undefined) row.venue = updates.venue;
+  if (updates.date !== undefined) row.date = updates.date;
+  if (updates.time !== undefined) row.time = updates.time;
   if (updates.maxAttendees !== undefined) row.max_attendees = updates.maxAttendees;
+  if (updates.tags !== undefined) row.tags = updates.tags;
   const { error } = await supabase.from('events').update(row).eq('id', id);
   if (error) throw new Error(error.message);
 }
@@ -379,7 +422,6 @@ export async function markAttendance(
   eventTitle: string,
   checkedBy: string,
 ): Promise<AttendanceRecord> {
-  // Check duplicate
   const { data: existing } = await supabase
     .from('attendance')
     .select('id')
