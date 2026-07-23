@@ -381,7 +381,7 @@ export default function ProfileScreen() {
                 <View style={styles.tagWrap}>
                   {user.programmingLanguages.map(l => (
                     <View key={l} style={[styles.tag, { backgroundColor: colors.muted, borderColor: colors.border }]}>
-                      <MaterialCommunityIcons name={LANGUAGE_ICONS[l] ?? 'code-tags'} size={13} color={colors.foreground} style={{ marginRight: 5 }} />
+                      <MaterialCommunityIcons name={(LANGUAGE_ICONS[l] ?? 'code-tags') as React.ComponentProps<typeof MaterialCommunityIcons>['name']} size={13} color={colors.foreground} style={{ marginRight: 5 }} />
                       <Text style={[styles.tagText, { color: colors.foreground }]}>{l}</Text>
                     </View>
                   ))}

@@ -19,8 +19,12 @@ import { StatusBadge, RoleBadge } from '@/components/ui/Badge';
 import { AnnouncementCard } from '@/components/AnnouncementCard';
 import { EventCard } from '@/components/EventCard';
 import { MemberIDCard } from '@/components/MemberIDCard';
-import { Announcement, Event } from '@/types';
+import { Announcement, Event, AttendanceRecord } from '@/types';
 import { AvatarDisplay } from '@/components/CartoonAvatars';
+import {
+  XPBar, StreakWidget, BadgeRow,
+  calcXP, calcStreak, calcBadges,
+} from '@/components/Gamification';
 
 // Lazy camera import for self-check-in
 let CameraView: React.ComponentType<{
@@ -32,6 +36,14 @@ let CameraView: React.ComponentType<{
 let useCameraPermissions: (() => [{ granted: boolean } | null, () => Promise<void>]) | null = null;
 if (Platform.OS !== 'web') {
   try { const cam = require('expo-camera'); CameraView = cam.CameraView; useCameraPermissions = cam.useCameraPermissions; } catch {}
+}
+
+function formatTimeAgo(isoStr: string): string {
+  const diff = Math.floor((Date.now() - new Date(isoStr).getTime()) / 60000);
+  if (diff < 1) return 'just now';
+  if (diff < 60) return `${diff}m ago`;
+  if (diff < 1440) return `${Math.floor(diff / 60)}h ago`;
+  return `${Math.floor(diff / 1440)}d ago`;
 }
 
 function timeGreeting() {
@@ -123,16 +135,23 @@ export default function HomeScreen() {
   const [checkingIn, setCheckingIn] = useState(false);
   const channelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
 
+  // Gamification state (members only)
+  const [myAttendance, setMyAttendance] = useState<AttendanceRecord[]>([]);
+  // Exec activity feed
+  const [activityFeed, setActivityFeed] = useState<{ memberId: string; memberName: string; eventTitle: string; checkedInAt: string }[]>([]);
+
   const permHook = useCameraPermissions?.();
   const permission = permHook?.[0] ?? null;
   const requestPermission = permHook?.[1] ?? (async () => {});
 
   const load = useCallback(async () => {
     try {
-      const [ann, evts, s] = await Promise.all([
+      const [ann, evts, s, attendance, feed] = await Promise.all([
         db.getAnnouncements(),
         db.getEvents(),
         isPrivileged ? db.getClubStats() : Promise.resolve({ total: 0, active: 0, pending: 0, executives: 0 }),
+        !isPrivileged && user?.id ? db.getUserAttendance(user.id) : Promise.resolve([]),
+        isPrivileged ? db.getRecentActivityFeed(8) : Promise.resolve([]),
         refreshUser().catch(() => {}),
       ]);
       setAnnouncements(ann.slice(0, 3));
@@ -140,12 +159,15 @@ export default function HomeScreen() {
       if (isPrivileged) {
         setStats(s);
         setPendingCount(s.pending);
+        setActivityFeed(feed);
+      } else {
+        setMyAttendance(attendance);
       }
     } finally {
       setLoading(false);
       setRefreshing(false);
     }
-  }, [isPrivileged, refreshUser]);
+  }, [isPrivileged, refreshUser, user?.id]);
 
   useEffect(() => {
     load();
@@ -217,6 +239,14 @@ export default function HomeScreen() {
 
   const initials = user?.fullName?.split(' ').map(n => n[0]).slice(0, 2).join('').toUpperCase() ?? 'IT';
 
+  // Gamification computations (member only)
+  const daysActive = user?.joinedDate
+    ? Math.max(0, Math.floor((Date.now() - new Date(user.joinedDate).getTime()) / 86400000))
+    : 0;
+  const myXP = calcXP(myAttendance.length, user?.profileCompleteness ?? 0, daysActive);
+  const myStreak = calcStreak(myAttendance);
+  const myBadges = user ? calcBadges(user, myAttendance) : [];
+
   // ─── MEMBER HOME ─────────────────────────────────────────────────────────────
   if (!isPrivileged) {
     return (
@@ -266,13 +296,53 @@ export default function HomeScreen() {
           </Animated.View>
         )}
 
+        {/* XP Progress */}
+        {user?.status === 'active' && (
+          <Animated.View entering={FadeInDown.delay(80).springify()}>
+            <GlassCard style={{ gap: 14 }}>
+              <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+                <Text style={[styles.sectionTitle, { color: colors.foreground }]}>Your Progress</Text>
+                <TouchableOpacity onPress={() => router.push('/(tabs)/leaderboard')} style={[styles.viewAllBtn, { backgroundColor: colors.primary + '14', borderColor: colors.primary + '30' }]}>
+                  <Ionicons name="trophy-outline" size={13} color={colors.primary} />
+                  <Text style={[styles.viewAllText, { color: colors.primary }]}>Rankings</Text>
+                </TouchableOpacity>
+              </View>
+              <XPBar xp={myXP} delay={80} />
+              <View style={{ flexDirection: 'row', gap: 10 }}>
+                <View style={[styles.miniStat, { backgroundColor: colors.muted, borderColor: colors.border }]}>
+                  <Ionicons name="checkmark-circle-outline" size={14} color={colors.primary} />
+                  <Text style={[styles.miniStatVal, { color: colors.foreground }]}>{myAttendance.length}</Text>
+                  <Text style={[styles.miniStatLabel, { color: colors.mutedForeground }]}>Events</Text>
+                </View>
+                <View style={[styles.miniStat, { backgroundColor: colors.muted, borderColor: colors.border }]}>
+                  <Text style={{ fontSize: 14 }}>🔥</Text>
+                  <Text style={[styles.miniStatVal, { color: colors.foreground }]}>{myStreak}</Text>
+                  <Text style={[styles.miniStatLabel, { color: colors.mutedForeground }]}>Streak</Text>
+                </View>
+                <View style={[styles.miniStat, { backgroundColor: colors.muted, borderColor: colors.border }]}>
+                  <Ionicons name="shield-checkmark-outline" size={14} color="#22c55e" />
+                  <Text style={[styles.miniStatVal, { color: colors.foreground }]}>{myBadges.filter(b => b.earned).length}</Text>
+                  <Text style={[styles.miniStatLabel, { color: colors.mutedForeground }]}>Badges</Text>
+                </View>
+              </View>
+            </GlassCard>
+          </Animated.View>
+        )}
+
+        {/* Badges */}
+        {user?.status === 'active' && myBadges.length > 0 && (
+          <Animated.View entering={FadeInDown.delay(100).springify()}>
+            <BadgeRow badges={myBadges} delay={100} />
+          </Animated.View>
+        )}
+
         {/* Quick actions */}
-        <Animated.View entering={FadeInDown.delay(100).springify()}>
+        <Animated.View entering={FadeInDown.delay(120).springify()}>
           <Text style={[styles.sectionTitle, { color: colors.foreground }]}>Quick Actions</Text>
           <View style={styles.qaGrid}>
             <QuickAction icon="calendar-outline" label="Events" color="#3b82f6" onPress={() => router.push('/(tabs)/events')} />
             <QuickAction icon="megaphone-outline" label="News" color="#f59e0b" onPress={() => router.push('/(tabs)/announcements')} />
-            <QuickAction icon="card-outline" label="My Card" color="#16a34a" onPress={() => router.push('/(tabs)/profile')} />
+            <QuickAction icon="people-outline" label="Members" color="#8b5cf6" onPress={() => router.push('/(tabs)/members')} />
             <QuickAction icon="scan-outline" label="Check In" color="#ec4899" onPress={() => setScannerVisible(true)} />
           </View>
         </Animated.View>
@@ -352,7 +422,7 @@ export default function HomeScreen() {
                   </View>
                 ) : Platform.OS === 'web' || !CameraView ? (
                   <View style={styles.webFallback}>
-                    <Ionicons name="camera-off-outline" size={40} color={colors.mutedForeground} />
+                    <Ionicons name="camera-outline" size={40} color={colors.mutedForeground} />
                     <Text style={[styles.webFallbackText, { color: colors.mutedForeground }]}>
                       Camera scanning requires the Expo Go app on your phone.
                     </Text>
@@ -474,12 +544,40 @@ export default function HomeScreen() {
       <Animated.View entering={FadeInDown.delay(100).springify()}>
         <Text style={[styles.sectionTitle, { color: colors.foreground }]}>Quick Actions</Text>
         <View style={styles.qaGrid}>
-          <QuickAction icon="calendar-outline" label="Events" color="#3b82f6" onPress={() => router.push('/(tabs)/executive')} />
-          <QuickAction icon="megaphone-outline" label="Post News" color="#f59e0b" onPress={() => router.push('/(tabs)/executive')} />
+          <QuickAction icon="people-outline" label="Members" color="#8b5cf6" onPress={() => router.push('/(tabs)/members')} />
           <QuickAction icon="qr-code-outline" label="Scanner" color="#16a34a" onPress={() => router.push('/(tabs)/scanner')} />
-          <QuickAction icon="people-outline" label="Members" color="#8b5cf6" onPress={() => router.push('/(tabs)/executive')} />
+          <QuickAction icon="megaphone-outline" label="Post News" color="#f59e0b" onPress={() => router.push('/(tabs)/executive')} />
+          <QuickAction icon="trophy-outline" label="Rankings" color="#ef4444" onPress={() => router.push('/(tabs)/leaderboard')} />
         </View>
       </Animated.View>
+
+      {/* Recent check-in activity feed */}
+      {activityFeed.length > 0 && (
+        <Animated.View entering={FadeInDown.delay(120).springify()} style={{ gap: 10 }}>
+          <View style={styles.sectionHeader}>
+            <View style={styles.sectionTitleRow}>
+              <View style={[styles.liveDot2, { backgroundColor: '#22c55e' }]} />
+              <Text style={[styles.sectionTitle, { color: colors.foreground }]}>Recent Check-ins</Text>
+            </View>
+          </View>
+          {activityFeed.map((item, i) => (
+            <Animated.View key={`${item.memberId}-${item.checkedInAt}`} entering={FadeInDown.delay(130 + i * 30).springify()}>
+              <View style={[styles.activityRow, { backgroundColor: colors.card, borderColor: colors.border }]}>
+                <View style={[styles.activityDot, { backgroundColor: '#22c55e20', borderColor: '#22c55e35' }]}>
+                  <Ionicons name="checkmark" size={12} color="#22c55e" />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={[styles.activityName, { color: colors.foreground }]} numberOfLines={1}>{item.memberName}</Text>
+                  <Text style={[styles.activityEvent, { color: colors.mutedForeground }]} numberOfLines={1}>{item.eventTitle}</Text>
+                </View>
+                <Text style={[styles.activityTime, { color: colors.mutedForeground }]}>
+                  {formatTimeAgo(item.checkedInAt)}
+                </Text>
+              </View>
+            </Animated.View>
+          ))}
+        </Animated.View>
+      )}
 
       {/* Upcoming events */}
       {upcomingEvents.length > 0 && (
@@ -580,4 +678,30 @@ const styles = StyleSheet.create({
   bl: { bottom: 0, left: 0, borderRightWidth: 0, borderTopWidth: 0, borderBottomLeftRadius: 4 },
   br: { bottom: 0, right: 0, borderLeftWidth: 0, borderTopWidth: 0, borderBottomRightRadius: 4 },
   scanHint: { position: 'absolute', bottom: 16, left: 0, right: 0, textAlign: 'center', fontSize: 12, fontFamily: 'Inter_400Regular', color: '#ffffffcc' },
+  // Gamification
+  viewAllBtn: {
+    flexDirection: 'row', alignItems: 'center', gap: 4,
+    paddingHorizontal: 10, paddingVertical: 5, borderRadius: 20, borderWidth: 1,
+  },
+  viewAllText: { fontSize: 11, fontFamily: 'Inter_600SemiBold' },
+  miniStat: {
+    flex: 1, alignItems: 'center', gap: 3, paddingVertical: 10,
+    borderRadius: 12, borderWidth: 1,
+  },
+  miniStatVal: { fontSize: 16, fontFamily: 'Inter_700Bold' },
+  miniStatLabel: { fontSize: 10, fontFamily: 'Inter_400Regular' },
+  // Activity feed
+  activityRow: {
+    flexDirection: 'row', alignItems: 'center', gap: 10, padding: 12,
+    borderRadius: 12, borderWidth: 1,
+    shadowColor: '#000', shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.04, shadowRadius: 4, elevation: 1,
+  },
+  activityDot: {
+    width: 28, height: 28, borderRadius: 8,
+    alignItems: 'center', justifyContent: 'center', borderWidth: 1,
+  },
+  activityName: { fontSize: 13, fontFamily: 'Inter_600SemiBold' },
+  activityEvent: { fontSize: 11, fontFamily: 'Inter_400Regular', marginTop: 1 },
+  activityTime: { fontSize: 11, fontFamily: 'Inter_400Regular' },
 });

@@ -16,6 +16,8 @@ import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { StatusBadge, RoleBadge } from '@/components/ui/Badge';
 import { User, Event, QRPayload } from '@/types';
+import { AvatarDisplay } from '@/components/CartoonAvatars';
+import { calcXP, getLevel } from '@/components/Gamification';
 
 // Lazy-import camera only on native (avoids web crash)
 let CameraView: React.ComponentType<{
@@ -237,19 +239,32 @@ export default function ScannerScreen() {
 
             <Animated.View entering={FadeInUp.delay(100).springify()}>
               <GlassCard style={{ gap: 14 }}>
-                {/* Avatar */}
+                {/* Avatar + level */}
                 <View style={{ alignItems: 'center', gap: 8 }}>
-                  <View style={[styles.avatar, { backgroundColor: colors.primary }]}>
-                    <Text style={styles.avatarText}>
-                      {scanResult.member.fullName.charAt(0).toUpperCase()}
-                    </Text>
-                  </View>
+                  <AvatarDisplay
+                    profilePicture={scanResult.member.profilePicture}
+                    size={72}
+                    initials={scanResult.member.fullName.split(' ').map(n => n[0]).slice(0, 2).join('').toUpperCase()}
+                    primaryColor={colors.primary}
+                    static
+                  />
                   <Text style={[styles.memberName, { color: colors.foreground }]}>
                     {scanResult.member.fullName}
                   </Text>
                   <Text style={[styles.memberIdText, { color: colors.primary }]}>
                     {scanResult.member.memberId}
                   </Text>
+                  {/* Level chip */}
+                  {(() => {
+                    const xp = calcXP(0, scanResult.member.profileCompleteness, 0);
+                    const level = getLevel(xp);
+                    return (
+                      <View style={[styles.levelChip, { backgroundColor: level.color + '15', borderColor: level.color + '30' }]}>
+                        <Text style={styles.levelEmoji}>{level.icon}</Text>
+                        <Text style={[styles.levelName, { color: level.color }]}>{level.name}</Text>
+                      </View>
+                    );
+                  })()}
                   <View style={{ flexDirection: 'row', gap: 6 }}>
                     <StatusBadge status={scanResult.member.status} />
                     <RoleBadge role={scanResult.member.role} />
@@ -421,12 +436,13 @@ const styles = StyleSheet.create({
   resultContainer: { flex: 1 },
   resultIcon: { width: 100, height: 100, borderRadius: 50, alignItems: 'center', justifyContent: 'center' },
   resultStatus: { fontSize: 20, fontFamily: 'Inter_700Bold', textAlign: 'center' },
-  avatar: {
-    width: 64, height: 64, borderRadius: 18,
-    alignItems: 'center', justifyContent: 'center',
-  },
-  avatarText: { fontSize: 26, fontFamily: 'Inter_700Bold', color: '#fff' },
   memberName: { fontSize: 18, fontFamily: 'Inter_700Bold' },
+  levelChip: {
+    flexDirection: 'row', alignItems: 'center', gap: 4,
+    paddingHorizontal: 10, paddingVertical: 4, borderRadius: 20, borderWidth: 1,
+  },
+  levelEmoji: { fontSize: 12 },
+  levelName: { fontSize: 12, fontFamily: 'Inter_600SemiBold' },
   memberIdText: { fontSize: 14, fontFamily: 'Inter_600SemiBold', letterSpacing: 0.5 },
   divider: { height: 1 },
   alreadyBanner: { flexDirection: 'row', gap: 8, padding: 10, alignItems: 'flex-start' },

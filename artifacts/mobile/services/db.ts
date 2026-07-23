@@ -485,3 +485,53 @@ export async function getClubStats(): Promise<{
     executives: members.filter(m => m.role === 'executive' || m.role === 'admin').length,
   };
 }
+
+// ─── Gamification / Leaderboard ───────────────────────────────────────────────
+
+/**
+ * Returns a map of memberId → attendance count for a list of user IDs.
+ * Uses a single query instead of N individual queries.
+ */
+export async function getMembersAttendanceCounts(
+  memberIds: string[]
+): Promise<Record<string, number>> {
+  if (memberIds.length === 0) return {};
+
+  const { data, error } = await supabase
+    .from('attendance')
+    .select('member_id')
+    .in('member_id', memberIds);
+
+  if (error) return {};
+
+  const counts: Record<string, number> = {};
+  for (const row of data ?? []) {
+    counts[row.member_id] = (counts[row.member_id] ?? 0) + 1;
+  }
+  return counts;
+}
+
+/**
+ * Returns the last N attendance records across all members (for exec activity feed).
+ */
+export async function getRecentActivityFeed(limit = 10): Promise<
+  { memberId: string; memberName: string; eventTitle: string; checkedInAt: string }[]
+> {
+  const { data, error } = await supabase
+    .from('attendance')
+    .select('member_id, event_title, checked_in_at, profiles(full_name)')
+    .order('checked_in_at', { ascending: false })
+    .limit(limit);
+
+  if (error || !data) return [];
+
+  return data.map((r: Record<string, unknown>) => {
+    const profile = r.profiles as Record<string, unknown> | null;
+    return {
+      memberId: r.member_id as string,
+      memberName: (profile?.full_name as string) ?? 'Unknown',
+      eventTitle: r.event_title as string,
+      checkedInAt: r.checked_in_at as string,
+    };
+  });
+}

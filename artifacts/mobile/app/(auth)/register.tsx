@@ -1450,7 +1450,7 @@ export default function RegisterScreen() {
                 value={form.fullName}
                 onChangeText={(v) => set("fullName", v)}
                 leftIcon="person-outline"
-                error={fieldErrors.fullName}
+                error={fieldErrors.fullName ?? undefined}
               />
             </Animated.View>
             <Animated.View entering={FadeInDown.delay(80)}>
@@ -1461,7 +1461,7 @@ export default function RegisterScreen() {
                 onChangeText={(v) => set("studentNumber", v)}
                 autoCapitalize="characters"
                 leftIcon="card-outline"
-                error={fieldErrors.studentNumber}
+                error={fieldErrors.studentNumber ?? undefined}
               />
             </Animated.View>
             <Animated.View entering={FadeInDown.delay(120)}>
@@ -1473,7 +1473,7 @@ export default function RegisterScreen() {
                 keyboardType="email-address"
                 autoCapitalize="none"
                 leftIcon="mail-outline"
-                error={fieldErrors.email}
+                error={fieldErrors.email ?? undefined}
               />
             </Animated.View>
 
@@ -1485,7 +1485,7 @@ export default function RegisterScreen() {
                 onChangeText={(v) => set("password", v)}
                 secureTextEntry
                 leftIcon="lock-closed-outline"
-                error={fieldErrors.password}
+                error={fieldErrors.password ?? undefined}
               />
               {form.password.length > 0 && (
                 <Animated.View

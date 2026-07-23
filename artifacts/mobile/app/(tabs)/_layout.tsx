@@ -8,6 +8,7 @@ export default function TabLayout() {
   const colors = useColors();
   const { user } = useAuth();
   const isPrivileged = user?.role === 'executive' || user?.role === 'admin';
+  const isActive = user?.status === 'active';
 
   const tabBar = {
     backgroundColor: colors.card,
@@ -31,6 +32,27 @@ export default function TabLayout() {
           title: 'Home',
           tabBarIcon: ({ color, size }) => (
             <Ionicons name="home" size={size} color={color} />
+          ),
+        }}
+      />
+      <Tabs.Screen
+        name="members"
+        options={{
+          title: 'Members',
+          // Only active members and executives see the directory
+          href: isActive || isPrivileged ? undefined : null,
+          tabBarIcon: ({ color, size }) => (
+            <Ionicons name="people" size={size} color={color} />
+          ),
+        }}
+      />
+      <Tabs.Screen
+        name="leaderboard"
+        options={{
+          title: 'Ranks',
+          href: isActive || isPrivileged ? undefined : null,
+          tabBarIcon: ({ color, size }) => (
+            <Ionicons name="trophy" size={size} color={color} />
           ),
         }}
       />

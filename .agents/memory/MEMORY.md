@@ -1,1 +1,2 @@
 - [ITIC Portal architecture](itic-portal.md) — Supabase-backed Expo app; schema SQL in artifacts/mobile/supabase_schema.sql; exec/admin demo accounts need manual creation in Supabase Auth dashboard.
+- [ITIC Gamification system](itic-gamification.md) — Client-side XP/levels/badges/streaks in Gamification.tsx; no DB schema changes needed; XP = attendance×15 + completeness×0.5 + loyalty.
