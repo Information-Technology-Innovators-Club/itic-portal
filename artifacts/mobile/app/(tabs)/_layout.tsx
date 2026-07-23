@@ -39,8 +39,8 @@ export default function TabLayout() {
         name="members"
         options={{
           title: 'Members',
-          // Only active members and executives see the directory
-          href: isActive || isPrivileged ? undefined : null,
+          // Only executives and admins see the directory
+          href: isPrivileged ? undefined : null,
           tabBarIcon: ({ color, size }) => (
             <Ionicons name="people" size={size} color={color} />
           ),

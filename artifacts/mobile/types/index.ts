@@ -35,6 +35,22 @@ export interface User {
   lastActive: string;
   emailVerified: boolean;
   profileCompleteness: number;
+  /** Title shown for executives/admins, e.g. "President", "Secretary" */
+  executiveTitle: string;
+}
+
+export type NotificationType = 'event' | 'announcement' | 'attendance' | 'system' | 'approval';
+
+export interface AppNotification {
+  id: string;
+  userId: string;
+  type: NotificationType;
+  title: string;
+  body: string;
+  isRead: boolean;
+  createdAt: string;
+  /** Optional deep-link target, e.g. "/event/<id>" */
+  linkTarget?: string;
 }
 
 export interface Announcement {
