@@ -591,7 +591,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     overflow: "hidden",
   },
-  logoImage: { width: "74%", height: "74%" },
+  logoImage: { width: "100%", height: "100%" },
   brandName: { color: "#fff", fontFamily: "Inter_700Bold", fontSize: 16 },
   brandSub: {
     color: "#dcfce7",
