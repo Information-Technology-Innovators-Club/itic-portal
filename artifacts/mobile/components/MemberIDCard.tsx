@@ -203,7 +203,7 @@ export function MemberIDCard({ user }: Props) {
                 <View style={[styles.cardAvatar, { borderColor: theme.accent + '60' }]}>
                   <AvatarDisplay
                     profilePicture={user.profilePicture}
-                    size={52}
+                    size={40}
                     initials={initials}
                     primaryColor={theme.accent}
                     static
@@ -272,9 +272,9 @@ export function MemberIDCard({ user }: Props) {
             <View style={styles.backHeaderStrip}>
               {/* Mini avatar on back header */}
               <View style={styles.backAvatarMini}>
-                <AvatarDisplay
-                  profilePicture={user.profilePicture}
-                  size={28}
+                  <AvatarDisplay
+                    profilePicture={user.profilePicture}
+                    size={22}
                   initials={initials}
                   primaryColor={theme.accent}
                   static
