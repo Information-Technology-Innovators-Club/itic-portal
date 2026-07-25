@@ -171,6 +171,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: 24,
     paddingVertical: 48,
     gap: 24,
+    width: "100%",
+    maxWidth: 480,
+    alignSelf: "center",
   },
   hero: { alignItems: "center", gap: 8 },
   logoWrap: {

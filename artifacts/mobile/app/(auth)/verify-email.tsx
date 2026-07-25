@@ -55,7 +55,7 @@ export default function VerifyEmailScreen() {
         ))}
       </Animated.View>
 
-      <Animated.View entering={FadeInUp.delay(500).springify()} style={{ width: '100%', gap: 10 }}>
+      <Animated.View entering={FadeInUp.delay(500).springify()} style={styles.actions}>
         <TouchableOpacity
           onPress={() => router.replace('/')}
           style={styles.exploreBtn}
@@ -81,17 +81,18 @@ const styles = StyleSheet.create({
     shadowColor: '#16a34a', shadowOffset: { width: 0, height: 8 },
     shadowOpacity: 0.5, shadowRadius: 20, elevation: 10,
   },
-  textBlock: { alignItems: 'center', gap: 10 },
+  textBlock: { width: '100%', maxWidth: 560, alignSelf: 'center', alignItems: 'center', gap: 10 },
   headline: { fontSize: 30, fontFamily: 'Inter_700Bold', color: '#f8fafc', letterSpacing: -0.5, textAlign: 'center' },
   sub: { fontSize: 15, fontFamily: 'Inter_400Regular', color: '#94a3b8', textAlign: 'center', lineHeight: 22 },
   idCard: {
-    width: '100%', padding: 20, borderRadius: 18,
+    width: '100%', maxWidth: 560, alignSelf: 'center', padding: 20, borderRadius: 18,
     backgroundColor: '#ffffff08', borderWidth: 1, alignItems: 'center', gap: 6,
   },
   idLabel: { fontSize: 10, fontFamily: 'Inter_700Bold', color: '#16a34a', letterSpacing: 1.5 },
   idValue: { fontSize: 24, fontFamily: 'Inter_700Bold', color: '#f8fafc', letterSpacing: 1 },
   idNote: { fontSize: 12, fontFamily: 'Inter_400Regular', color: '#64748b', textAlign: 'center' },
-  steps: { width: '100%', gap: 12 },
+  steps: { width: '100%', maxWidth: 560, alignSelf: 'center', gap: 12 },
+  actions: { width: '100%', maxWidth: 560, alignSelf: 'center', gap: 10 },
   stepRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 12 },
   stepIcon: {
     width: 30, height: 30, borderRadius: 9,

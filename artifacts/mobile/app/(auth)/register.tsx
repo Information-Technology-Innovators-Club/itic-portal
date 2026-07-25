@@ -338,7 +338,10 @@ export default function RegisterScreen() {
       </LinearGradient>
 
       <ScrollView
-        contentContainerStyle={styles.scroll}
+        contentContainerStyle={[
+          styles.scroll,
+          { width: "100%", maxWidth: 960, alignSelf: "center" },
+        ]}
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
       >

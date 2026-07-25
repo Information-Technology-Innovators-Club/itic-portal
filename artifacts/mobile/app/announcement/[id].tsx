@@ -142,7 +142,7 @@ export default function AnnouncementDetailScreen() {
 
 const styles = StyleSheet.create({
   center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
-  scroll: { paddingHorizontal: 22, gap: 16 },
+  scroll: { width: '100%', maxWidth: 960, alignSelf: 'center', paddingHorizontal: 22, gap: 16 },
   backBtn: {
     width: 38, height: 38, borderRadius: 10,
     alignItems: 'center', justifyContent: 'center', alignSelf: 'flex-start',

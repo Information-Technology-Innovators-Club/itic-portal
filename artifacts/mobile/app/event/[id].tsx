@@ -179,7 +179,7 @@ const styles = StyleSheet.create({
   categoryText: { fontSize: 11, fontFamily: 'Inter_700Bold', color: '#fff', letterSpacing: 0.5 },
   heroTitle: { fontSize: 24, fontFamily: 'Inter_700Bold', color: '#fff', letterSpacing: -0.3, lineHeight: 30 },
   heroCountdown: { fontSize: 14, fontFamily: 'Inter_600SemiBold', color: '#ffffffcc' },
-  scroll: { padding: 20, gap: 14 },
+  scroll: { width: '100%', maxWidth: 960, alignSelf: 'center', padding: 20, gap: 14 },
   infoGrid: { flexDirection: 'row', flexWrap: 'wrap', borderRadius: 16, borderWidth: 1, overflow: 'hidden' },
   infoCell: { width: '50%', padding: 14, gap: 4 },
   infoLabel: { fontSize: 10, fontFamily: 'Inter_500Medium', textTransform: 'uppercase', letterSpacing: 0.5 },
