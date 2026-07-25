@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import {
-  StyleSheet, Text, Pressable, View, Dimensions,
+  StyleSheet, Text, Pressable, View, useWindowDimensions,
 } from 'react-native';
 import Animated, {
   interpolate, useAnimatedStyle, useSharedValue, withSpring, Extrapolate,
@@ -11,10 +11,6 @@ import QRCode from 'react-native-qrcode-svg';
 import { User } from '@/types';
 import { useColors } from '@/hooks/useColors';
 import { AvatarDisplay } from '@/components/CartoonAvatars';
-
-const { width: SCREEN_W } = Dimensions.get('window');
-const CARD_W = Math.min(SCREEN_W - 32, 380);
-const CARD_H = CARD_W * 0.6;
 
 interface Props {
   user: User;
@@ -80,6 +76,10 @@ const ROLE_THEME = {
 
 export function MemberIDCard({ user }: Props) {
   const colors = useColors();
+  const { width: viewportWidth } = useWindowDimensions();
+  // Recalculate for browser resizes, while keeping a readable desktop card.
+  const cardWidth = Math.min(Math.max(viewportWidth - 32, 280), 460);
+  const cardHeight = cardWidth * 0.6;
   const [flipped, setFlipped] = useState(false);
   const rotation = useSharedValue(0);
   const press = useSharedValue(1);
@@ -152,10 +152,10 @@ export function MemberIDCard({ user }: Props) {
   return (
     <View style={styles.wrapper}>
       <Pressable onPress={flip} onPressIn={onPressIn} onPressOut={onPressOut} hitSlop={8}>
-        <Animated.View style={[{ width: CARD_W, height: CARD_H }, wrapperStyle, shadowStyle, styles.shadowHost]}>
+        <Animated.View style={[{ width: cardWidth, height: cardHeight }, wrapperStyle, shadowStyle, styles.shadowHost]}>
 
           {/* ── FRONT ─────────────────────────────────────────────── */}
-          <Animated.View style={[styles.card, { width: CARD_W, height: CARD_H }, frontStyle]}>
+          <Animated.View style={[styles.card, { width: cardWidth, height: cardHeight }, frontStyle]}>
             <LinearGradient
               colors={theme.front}
               start={{ x: 0, y: 0 }}
@@ -262,7 +262,7 @@ export function MemberIDCard({ user }: Props) {
           </Animated.View>
 
           {/* ── BACK ──────────────────────────────────────────────── */}
-          <Animated.View style={[styles.card, { width: CARD_W, height: CARD_H }, backStyle]}>
+          <Animated.View style={[styles.card, { width: cardWidth, height: cardHeight }, backStyle]}>
             <LinearGradient
               colors={theme.back}
               start={{ x: 0, y: 0 }}

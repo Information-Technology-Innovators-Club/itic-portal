@@ -21,6 +21,8 @@ export default function TabLayout() {
       screenOptions={{
         headerShown: false,
         tabBarStyle: tabBar,
+        tabBarItemStyle: Platform.OS === 'web' ? { minWidth: 86 } : undefined,
+        tabBarAllowFontScaling: false,
         tabBarActiveTintColor: colors.primary,
         tabBarInactiveTintColor: colors.mutedForeground,
         tabBarLabelStyle: { fontFamily: 'Inter_500Medium', fontSize: 10 },
