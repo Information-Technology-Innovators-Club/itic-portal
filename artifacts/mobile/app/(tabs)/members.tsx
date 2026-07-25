@@ -6,7 +6,7 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator, Platform, RefreshControl, ScrollView,
-  StyleSheet, Text, TouchableOpacity, View,
+  StyleSheet, Text, TouchableOpacity, View, useWindowDimensions,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Animated, { FadeInDown } from 'react-native-reanimated';
@@ -27,8 +27,10 @@ const SKILL_FILTERS = ['All', 'Web Dev', 'Mobile', 'AI/ML', 'Cybersecurity', 'UI
 export default function MembersScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
+  const { width: viewportWidth } = useWindowDimensions();
   const { user } = useAuth();
   const topPad = Platform.OS === 'web' ? 24 : insets.top + 8;
+  const useDesktopGrid = Platform.OS === 'web' && viewportWidth >= 980;
 
   const [members, setMembers] = useState<User[]>([]);
   const [attendanceCounts, setAttendanceCounts] = useState<Record<string, number>>({});
@@ -165,7 +167,8 @@ export default function MembersScreen() {
             </Text>
           </GlassCard>
         ) : (
-          filtered.map((m, i) => {
+          <View style={useDesktopGrid ? styles.desktopGrid : undefined}>
+          {filtered.map((m, i) => {
             const count = attendanceCounts[m.id] ?? 0;
             const days = daysActive(m.joinedDate);
             const xp = calcXP(count, m.profileCompleteness, days);
@@ -175,7 +178,11 @@ export default function MembersScreen() {
             const initials = m.fullName?.split(' ').map(n => n[0]).slice(0, 2).join('').toUpperCase() ?? '?';
 
             return (
-              <Animated.View key={m.id} entering={FadeInDown.delay(i * 30).springify()}>
+              <Animated.View
+                key={m.id}
+                entering={FadeInDown.delay(i * 30).springify()}
+                style={useDesktopGrid ? styles.desktopGridItem : undefined}
+              >
                 <TouchableOpacity
                   activeOpacity={0.85}
                   onPress={() => setExpandedId(isExpanded ? null : m.id)}
@@ -290,7 +297,8 @@ export default function MembersScreen() {
                 </TouchableOpacity>
               </Animated.View>
             );
-          })
+          })}
+          </View>
         )}
       </ScrollView>
     </View>
@@ -345,6 +353,8 @@ const styles = StyleSheet.create({
   chip: { paddingHorizontal: 14, paddingVertical: 7, borderRadius: 20, borderWidth: 1 },
   chipText: { fontSize: 12, fontFamily: 'Inter_600SemiBold' },
   scroll: { padding: 16, gap: 10 },
+  desktopGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 14 },
+  desktopGridItem: { width: '48.9%' },
   empty: { alignItems: 'center', gap: 10, paddingVertical: 32 },
   emptyTitle: { fontSize: 16, fontFamily: 'Inter_600SemiBold' },
   emptyText: { fontSize: 13, fontFamily: 'Inter_400Regular', textAlign: 'center' },

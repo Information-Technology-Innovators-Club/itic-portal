@@ -7,6 +7,7 @@ import { useAuth } from '@/context/AuthContext';
 export default function TabLayout() {
   const colors = useColors();
   const { user } = useAuth();
+  const isWeb = Platform.OS === 'web';
   const isPrivileged = user?.role === 'executive' || user?.role === 'admin';
   const isActive = user?.status === 'active';
 
@@ -14,6 +15,13 @@ export default function TabLayout() {
     backgroundColor: colors.card,
     borderTopColor: colors.border,
     borderTopWidth: 1,
+    ...(isWeb ? {
+      width: 224,
+      borderTopWidth: 0,
+      borderRightWidth: 1,
+      borderRightColor: colors.border,
+      paddingTop: 18,
+    } : {}),
   };
 
   return (
@@ -21,11 +29,18 @@ export default function TabLayout() {
       screenOptions={{
         headerShown: false,
         tabBarStyle: tabBar,
-        tabBarItemStyle: Platform.OS === 'web' ? { minWidth: 86 } : undefined,
+        tabBarPosition: isWeb ? 'left' : 'bottom',
+        tabBarLabelPosition: isWeb ? 'beside-icon' : 'below-icon',
+        tabBarItemStyle: isWeb
+          ? { borderRadius: 10, marginHorizontal: 10, marginVertical: 3, paddingHorizontal: 8 }
+          : undefined,
         tabBarAllowFontScaling: false,
+        sceneStyle: isWeb
+          ? { width: '100%', maxWidth: 1440, alignSelf: 'center' }
+          : undefined,
         tabBarActiveTintColor: colors.primary,
         tabBarInactiveTintColor: colors.mutedForeground,
-        tabBarLabelStyle: { fontFamily: 'Inter_500Medium', fontSize: 10 },
+        tabBarLabelStyle: { fontFamily: 'Inter_500Medium', fontSize: isWeb ? 13 : 10 },
       }}
     >
       <Tabs.Screen
