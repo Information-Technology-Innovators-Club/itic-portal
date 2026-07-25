@@ -199,7 +199,7 @@ function LeaderRow({ entry, isMe, delay }: { entry: LeaderEntry; isMe: boolean; 
 
 const styles = StyleSheet.create({
   center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
-  scroll: { paddingHorizontal: 16, gap: 14 },
+  scroll: { width: '100%', maxWidth: 1080, alignSelf: 'center', paddingHorizontal: 16, gap: 14 },
   headerWrap: { marginHorizontal: -16 },
   headerGrad: { alignItems: 'center', gap: 6, paddingVertical: 24, paddingHorizontal: 24 },
   headerEmoji: { fontSize: 42 },

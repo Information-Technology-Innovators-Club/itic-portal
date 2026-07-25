@@ -663,7 +663,7 @@ export default function ProfileScreen() {
 
 const styles = StyleSheet.create({
   center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
-  scroll: { gap: 14 },
+  scroll: { width: '100%', maxWidth: 1080, alignSelf: 'center', gap: 14 },
 
   // Hero
   hero: { alignItems: 'center', gap: 6, paddingBottom: 28, paddingHorizontal: 24 },

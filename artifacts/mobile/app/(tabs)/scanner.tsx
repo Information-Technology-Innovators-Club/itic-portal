@@ -424,7 +424,7 @@ function InfoRow({ icon, label, value, colors }: {
 }
 
 const styles = StyleSheet.create({
-  scroll: { padding: 20, gap: 16 },
+  scroll: { width: '100%', maxWidth: 860, alignSelf: 'center', padding: 20, gap: 16 },
   header: { alignItems: 'center', gap: 8, marginBottom: 4 },
   iconBadge: { width: 56, height: 56, borderRadius: 16, alignItems: 'center', justifyContent: 'center' },
   title: { fontSize: 22, fontFamily: 'Inter_700Bold', letterSpacing: -0.3 },

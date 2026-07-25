@@ -656,7 +656,7 @@ export default function HomeScreen() {
 
 const styles = StyleSheet.create({
   center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
-  scroll: { paddingHorizontal: 16, gap: 18 },
+  scroll: { width: '100%', maxWidth: 1180, alignSelf: 'center', paddingHorizontal: 16, gap: 18 },
   greetRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   greeting: { fontSize: 14, fontFamily: 'Inter_400Regular' },
   greetName: { fontSize: 26, fontFamily: 'Inter_700Bold', letterSpacing: -0.5 },

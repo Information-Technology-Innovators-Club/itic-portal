@@ -999,7 +999,7 @@ const styles = StyleSheet.create({
   tabText: { fontSize: 12, fontFamily: 'Inter_600SemiBold' },
   tabBadge: { minWidth: 18, height: 18, borderRadius: 9, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 4 },
   tabBadgeText: { fontSize: 9, fontFamily: 'Inter_700Bold' },
-  scroll: { padding: 16, gap: 12 },
+  scroll: { width: '100%', maxWidth: 1180, alignSelf: 'center', padding: 16, gap: 12 },
   statsRow: { flexDirection: 'row', gap: 8 },
   statCard: {
     flex: 1, alignItems: 'center', gap: 4, paddingVertical: 12,

@@ -352,7 +352,7 @@ const styles = StyleSheet.create({
   chipRow: { gap: 8, paddingVertical: 2 },
   chip: { paddingHorizontal: 14, paddingVertical: 7, borderRadius: 20, borderWidth: 1 },
   chipText: { fontSize: 12, fontFamily: 'Inter_600SemiBold' },
-  scroll: { padding: 16, gap: 10 },
+  scroll: { width: '100%', maxWidth: 1180, alignSelf: 'center', padding: 16, gap: 10 },
   desktopGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 14 },
   desktopGridItem: { width: '48.9%' },
   empty: { alignItems: 'center', gap: 10, paddingVertical: 32 },
