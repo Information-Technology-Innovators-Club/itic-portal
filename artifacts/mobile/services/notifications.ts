@@ -20,6 +20,10 @@ Notifications.setNotificationHandler({
 export async function registerForPushNotificationsAsync(userId?: string): Promise<string | null> {
   let token: string | null = null;
 
+  // The app uses native Expo push notifications. Web push requires a separate
+  // VAPID/browser subscription setup, so never request an Expo token on web.
+  if (Platform.OS === 'web') return null;
+
   if (Platform.OS === 'android') {
     await Notifications.setNotificationChannelAsync('default', {
       name: 'ITIC Portal Notifications',
@@ -62,7 +66,23 @@ export async function registerForPushNotificationsAsync(userId?: string): Promis
 /**
  * Trigger a immediate local push notification on device.
  */
-export async function scheduleLocalNotification(title: string, body: string, data?: Record<string, unknown>) {
+export async function scheduleLocalNotification(
+  title: string,
+  body: string,
+  data?: Record<string, unknown>,
+): Promise<boolean> {
+  // expo-notifications does not implement local scheduling on web. Use the
+  // browser Notification API instead; it needs no VAPID key for local alerts.
+  if (Platform.OS === 'web') {
+    if (!('Notification' in globalThis)) return false;
+    const permission = globalThis.Notification.permission === 'granted'
+      ? 'granted'
+      : await globalThis.Notification.requestPermission();
+    if (permission !== 'granted') return false;
+    new globalThis.Notification(title, { body });
+    return true;
+  }
+
   await Notifications.scheduleNotificationAsync({
     content: {
       title,
@@ -72,6 +92,7 @@ export async function scheduleLocalNotification(title: string, body: string, dat
     },
     trigger: null, // trigger immediately
   });
+  return true;
 }
 
 /**

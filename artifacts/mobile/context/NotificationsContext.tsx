@@ -24,7 +24,7 @@ interface NotificationsContextType {
   markAsRead: (id: string) => Promise<void>;
   markAllAsRead: () => Promise<void>;
   deleteNotif: (id: string) => Promise<void>;
-  sendTestPushNotification: () => Promise<void>;
+  sendTestPushNotification: () => Promise<boolean>;
 }
 
 const NotificationsContext = createContext<NotificationsContextType | undefined>(undefined);
@@ -110,10 +110,10 @@ export const NotificationsProvider: React.FC<{ children: React.ReactNode }> = ({
   };
 
   const sendTestPushNotification = async () => {
-    if (!user) return;
+    if (!user) return false;
 
     // Trigger local push notification immediately
-    await scheduleLocalNotification(
+    const wasDisplayed = await scheduleLocalNotification(
       '⚡ ITIC Portal Test Push',
       'Push notification system is working perfectly!',
       { test: true }
@@ -130,6 +130,7 @@ export const NotificationsProvider: React.FC<{ children: React.ReactNode }> = ({
 
     setNotifications(prev => [newNotif, ...prev]);
 
+    return wasDisplayed;
   };
 
   return (

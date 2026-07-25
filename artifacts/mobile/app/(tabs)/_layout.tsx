@@ -3,6 +3,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { Platform } from 'react-native';
 import { useColors } from '@/hooks/useColors';
 import { useAuth } from '@/context/AuthContext';
+import { WebSidebar } from '@/components/WebSidebar';
 
 export default function TabLayout() {
   const colors = useColors();
@@ -16,7 +17,7 @@ export default function TabLayout() {
     borderTopColor: colors.border,
     borderTopWidth: 1,
     ...(isWeb ? {
-      width: 224,
+      width: 260,
       borderTopWidth: 0,
       borderRightWidth: 1,
       borderRightColor: colors.border,
@@ -26,14 +27,13 @@ export default function TabLayout() {
 
   return (
     <Tabs
+      tabBar={isWeb ? props => <WebSidebar {...props} /> : undefined}
       screenOptions={{
         headerShown: false,
         tabBarStyle: tabBar,
         tabBarPosition: isWeb ? 'left' : 'bottom',
         tabBarLabelPosition: isWeb ? 'beside-icon' : 'below-icon',
-        tabBarItemStyle: isWeb
-          ? { borderRadius: 10, marginHorizontal: 10, marginVertical: 3, paddingHorizontal: 8 }
-          : undefined,
+        tabBarItemStyle: isWeb ? { display: 'none' } : undefined,
         tabBarAllowFontScaling: false,
         sceneStyle: isWeb
           ? { width: '100%', maxWidth: 1440, alignSelf: 'center' }
@@ -60,6 +60,15 @@ export default function TabLayout() {
           href: isPrivileged ? undefined : null,
           tabBarIcon: ({ color, size }) => (
             <Ionicons name="people" size={size} color={color} />
+          ),
+        }}
+      />
+      <Tabs.Screen
+        name="leadership"
+        options={{
+          title: 'Leadership',
+          tabBarIcon: ({ color, size }) => (
+            <Ionicons name="people-circle" size={size} color={color} />
           ),
         }}
       />

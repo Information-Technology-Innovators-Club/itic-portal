@@ -497,14 +497,22 @@ export default function ProfileScreen() {
             <View style={{ flexDirection: 'row', gap: 10 }}>
               <TouchableOpacity
                 onPress={async () => {
-                  await sendTestPushNotification();
-                  showToast('info', 'Test Push Dispatched', 'Check your device for push alert.');
+                  const wasDisplayed = await sendTestPushNotification();
+                  showToast(
+                    'info',
+                    wasDisplayed ? 'Test alert dispatched' : 'In-app notification created',
+                    wasDisplayed
+                      ? Platform.OS === 'web' ? 'Check your browser notification.' : 'Check your device for push alert.'
+                      : 'Allow browser notifications to receive alerts outside the app.',
+                  );
                 }}
                 activeOpacity={0.75}
                 style={[styles.socialBtn, { flex: 1, backgroundColor: '#6366f115', borderColor: '#6366f130' }]}
               >
                 <Ionicons name="phone-portrait-outline" size={15} color="#818cf8" />
-                <Text style={[styles.socialBtnText, { color: '#818cf8' }]}>Test Push</Text>
+                <Text style={[styles.socialBtnText, { color: '#818cf8' }]}>
+                  {Platform.OS === 'web' ? 'Test Browser Alert' : 'Test Push'}
+                </Text>
               </TouchableOpacity>
 
             </View>
