@@ -2,7 +2,7 @@ import { styles } from "@/constants/styles";
 import { useColors } from "@/hooks/useColors";
 import React, { useCallback, useMemo } from "react";
 import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
-import { LEVELS } from "./Gamification";
+import { LEVELS } from "@/data/steps";
 
 type Level = (typeof LEVELS)[number];
 type Colors = ReturnType<typeof useColors>;
@@ -98,7 +98,7 @@ export function LevelMeter({ value, onSelect, colors }: LevelMeterProps) {
           const passed = selectedIndex >= index;
 
           return (
-            <React.Fragment key={String(level)}>
+            <React.Fragment key={level}>
               <LevelNode
                 level={level}
                 index={index}
@@ -109,6 +109,7 @@ export function LevelMeter({ value, onSelect, colors }: LevelMeterProps) {
               />
               {index < LEVELS.length - 1 && (
                 <View
+                  key={`${level}-connector`}
                   style={[
                     styles.levelLine,
                     {

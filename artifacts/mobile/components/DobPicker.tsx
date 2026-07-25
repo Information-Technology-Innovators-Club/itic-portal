@@ -1,15 +1,47 @@
 // Beautiful cross-platform date-of-birth picker: a scrollable
 // day / month / year wheel inside a bottom sheet, with a live
+// preview and age badge on the trigger button.
 
 import { styles } from "@/constants/styles";
+import { Button } from "@/components/ui/Button";
 import { MONTHS } from "@/data/steps";
 import { useColors } from "@/hooks/useColors";
 import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import { useState, useMemo, useEffect } from "react";
-import { View, TouchableOpacity, Modal, Button, Text } from "react-native";
+import { View, TouchableOpacity, Modal, Text } from "react-native";
 import { daysInMonth, WheelColumn } from "./WheelColumn";
 import * as Haptics from "expo-haptics";
+
+/**
+ * Parses a "YYYY-MM-DD" string as a *local* calendar date (no UTC
+ * conversion). Returns null if the string is malformed or doesn't
+ * correspond to a real calendar date (e.g. "2024-02-30").
+ */
+function parseLocalDate(iso: string): Date | null {
+  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(iso);
+  if (!match) return null;
+
+  const year = Number(match[1]);
+  const month = Number(match[2]) - 1;
+  const day = Number(match[3]);
+  const date = new Date(year, month, day);
+
+  const isValid =
+    date.getFullYear() === year &&
+    date.getMonth() === month &&
+    date.getDate() === day;
+
+  return isValid ? date : null;
+}
+
+/** Formats a Date back to "YYYY-MM-DD" using local components (no UTC shift). */
+function toLocalISODate(date: Date): string {
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, "0");
+  const d = String(date.getDate()).padStart(2, "0");
+  return `${y}-${m}-${d}`;
+}
 
 export function formatDate(d: Date) {
   return d.toLocaleDateString(undefined, {
@@ -18,7 +50,7 @@ export function formatDate(d: Date) {
     day: "numeric",
   });
 }
-// preview and age badge on the trigger button.
+
 export function DobPicker({
   value,
   onChange,
@@ -41,14 +73,16 @@ export function DobPicker({
     return arr;
   }, [maxYear, minYear]);
 
-  const initial = value ? new Date(value) : new Date(maxYear, 0, 1);
+  // Parsed once per `value` change — local-date-safe, and null-checked
+  // instead of trusting the string is always well-formed.
+  const parsedDate = useMemo(() => parseLocalDate(value), [value]);
+
+  const initial = parsedDate ?? new Date(maxYear, 0, 1);
   const initialYearIdx = Math.max(0, years.indexOf(initial.getFullYear()));
 
   const [tempDay, setTempDay] = useState(initial.getDate() - 1);
   const [tempMonth, setTempMonth] = useState(initial.getMonth());
-  const [tempYear, setTempYear] = useState(
-    initialYearIdx >= 0 ? initialYearIdx : 0,
-  );
+  const [tempYear, setTempYear] = useState(initialYearIdx);
 
   const dayLabels = useMemo(() => {
     const count = daysInMonth(tempMonth, years[tempYear] ?? maxYear);
@@ -60,11 +94,10 @@ export function DobPicker({
   }, [dayLabels.length, tempDay]);
 
   function openPicker() {
-    if (value) {
-      const d = new Date(value);
-      setTempDay(d.getDate() - 1);
-      setTempMonth(d.getMonth());
-      const yIdx = years.indexOf(d.getFullYear());
+    if (parsedDate) {
+      setTempDay(parsedDate.getDate() - 1);
+      setTempMonth(parsedDate.getMonth());
+      const yIdx = years.indexOf(parsedDate.getFullYear());
       setTempYear(yIdx >= 0 ? yIdx : 0);
     }
     setOpen(true);
@@ -73,20 +106,19 @@ export function DobPicker({
   function confirm() {
     const y = years[tempYear] ?? maxYear;
     const d = new Date(y, tempMonth, tempDay + 1);
-    onChange(d.toISOString().slice(0, 10));
+    onChange(toLocalISODate(d));
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     setOpen(false);
   }
 
-  const date = value ? new Date(value) : undefined;
   const age = useMemo(() => {
-    if (!date) return null;
+    if (!parsedDate) return null;
     const t = new Date();
-    let a = t.getFullYear() - date.getFullYear();
-    const m = t.getMonth() - date.getMonth();
-    if (m < 0 || (m === 0 && t.getDate() < date.getDate())) a--;
+    let a = t.getFullYear() - parsedDate.getFullYear();
+    const m = t.getMonth() - parsedDate.getMonth();
+    if (m < 0 || (m === 0 && t.getDate() < parsedDate.getDate())) a--;
     return a;
-  }, [date]);
+  }, [parsedDate]);
 
   return (
     <View style={{ gap: 6 }}>
@@ -96,6 +128,12 @@ export function DobPicker({
       <TouchableOpacity
         onPress={openPicker}
         activeOpacity={0.7}
+        accessibilityRole="button"
+        accessibilityLabel={
+          parsedDate
+            ? `Date of birth: ${formatDate(parsedDate)}`
+            : "Select your date of birth"
+        }
         style={[
           styles.dobBtn,
           {
@@ -115,10 +153,10 @@ export function DobPicker({
         <Text
           style={[
             styles.dobText,
-            { color: value ? colors.foreground : colors.mutedForeground },
+            { color: parsedDate ? colors.foreground : colors.mutedForeground },
           ]}
         >
-          {value ? formatDate(date!) : "Select your date of birth"}
+          {parsedDate ? formatDate(parsedDate) : "Select your date of birth"}
         </Text>
         {age !== null && (
           <View style={[styles.ageBadge, { backgroundColor: colors.primary }]}>
@@ -198,6 +236,8 @@ export function DobPicker({
                 onPress={() => setOpen(false)}
                 style={[styles.dobCancelBtn, { borderColor: colors.border }]}
                 activeOpacity={0.7}
+                accessibilityRole="button"
+                accessibilityLabel="Cancel"
               >
                 <Text
                   style={{
