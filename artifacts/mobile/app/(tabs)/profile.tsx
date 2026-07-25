@@ -168,14 +168,12 @@ export default function ProfileScreen() {
   const [showAll, setShowAll] = useState(false);
   const topPad = Platform.OS === 'web' ? 24 : insets.top;
 
-  const { sendTestPushNotification, sendTestEmailNotification } = useNotifications();
+  const { sendTestPushNotification } = useNotifications();
   const [pushEnabled, setPushEnabled] = useState(user?.pushEnabled ?? true);
-  const [emailEnabled, setEmailEnabled] = useState(user?.emailEnabled ?? true);
 
   useEffect(() => {
     if (user) {
       if (user.pushEnabled !== undefined) setPushEnabled(user.pushEnabled);
-      if (user.emailEnabled !== undefined) setEmailEnabled(user.emailEnabled);
     }
   }, [user]);
 
@@ -189,19 +187,6 @@ export default function ProfileScreen() {
     } catch {
       setPushEnabled(!val);
       showToast('error', 'Failed to update push preference');
-    }
-  };
-
-  const toggleEmail = async (val: boolean) => {
-    if (!user) return;
-    setEmailEnabled(val);
-    try {
-      await db.updateNotificationPreferences(user.id, { emailEnabled: val });
-      await refreshUser();
-      showToast('success', val ? 'Email Notifications Enabled' : 'Email Notifications Disabled');
-    } catch {
-      setEmailEnabled(!val);
-      showToast('error', 'Failed to update email preference');
     }
   };
 
@@ -506,21 +491,6 @@ export default function ProfileScreen() {
 
           <View style={{ height: 1, backgroundColor: colors.border }} />
 
-          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-            <View style={{ flex: 1, marginRight: 12 }}>
-              <Text style={{ color: colors.foreground, fontSize: 14, fontWeight: '600' }}>Email Notifications (Resend)</Text>
-              <Text style={{ color: colors.mutedForeground, fontSize: 12, marginTop: 2 }}>Get event announcements & check-in receipts via email</Text>
-            </View>
-            <Switch
-              value={emailEnabled}
-              onValueChange={toggleEmail}
-              trackColor={{ false: '#334155', true: '#6366f1' }}
-              thumbColor="#ffffff"
-            />
-          </View>
-
-          <View style={{ height: 1, backgroundColor: colors.border }} />
-
           {/* Test Buttons */}
           <View style={{ gap: 8, paddingTop: 4 }}>
             <Text style={[styles.subLabel, { color: colors.mutedForeground }]}>Test System Connections</Text>
@@ -537,17 +507,6 @@ export default function ProfileScreen() {
                 <Text style={[styles.socialBtnText, { color: '#818cf8' }]}>Test Push</Text>
               </TouchableOpacity>
 
-              <TouchableOpacity
-                onPress={async () => {
-                  await sendTestEmailNotification();
-                  showToast('info', 'Test Email Sent', 'Check your inbox for Resend email.');
-                }}
-                activeOpacity={0.75}
-                style={[styles.socialBtn, { flex: 1, backgroundColor: '#10b98115', borderColor: '#10b98130' }]}
-              >
-                <Ionicons name="mail-outline" size={15} color="#34d399" />
-                <Text style={[styles.socialBtnText, { color: '#34d399' }]}>Test Email</Text>
-              </TouchableOpacity>
             </View>
           </View>
         </GlassCard>

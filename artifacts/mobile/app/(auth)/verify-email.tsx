@@ -57,7 +57,7 @@ export default function VerifyEmailScreen() {
 
       <Animated.View entering={FadeInUp.delay(500).springify()} style={{ width: '100%', gap: 10 }}>
         <TouchableOpacity
-          onPress={() => router.replace('/(tabs)/')}
+          onPress={() => router.replace('/')}
           style={styles.exploreBtn}
         >
           <Text style={styles.exploreBtnText}>Explore the App</Text>

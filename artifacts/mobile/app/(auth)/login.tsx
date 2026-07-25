@@ -44,7 +44,7 @@ export default function LoginScreen() {
       await login(email.trim(), password);
       await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       showToast("success", "Welcome back!");
-      router.replace("/(tabs)/");
+      router.replace("/");
     } catch (err: unknown) {
       await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
       const msg =
@@ -106,7 +106,7 @@ export default function LoginScreen() {
 
           <View style={{ gap: 14 }}>
             <Input
-              label="University Email"
+              label="Email"
               placeholder="your@email.com"
               value={email}
               onChangeText={setEmail}

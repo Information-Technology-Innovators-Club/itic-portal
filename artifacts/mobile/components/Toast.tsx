@@ -31,18 +31,21 @@ function ToastItem({ toast }: { toast: ToastMessage }) {
     <Animated.View
       entering={FadeInUp.springify().damping(14)}
       exiting={FadeOutUp.duration(200)}
-      style={[animStyle, styles.item, { backgroundColor: c.bg, borderColor: c.border }]}
     >
-      <Ionicons name={c.iconName} size={22} color={c.icon} />
-      <View style={{ flex: 1 }}>
-        <Text style={[styles.title, { color: c.icon }]}>{toast.title}</Text>
-        {!!toast.message && (
-          <Text style={styles.msg} numberOfLines={2}>{toast.message}</Text>
-        )}
-      </View>
-      <TouchableOpacity onPress={() => dismiss(toast.id)} hitSlop={8}>
-        <Ionicons name="close" size={16} color="#64748b" />
-      </TouchableOpacity>
+      <Animated.View
+        style={[animStyle, styles.item, { backgroundColor: c.bg, borderColor: c.border }]}
+      >
+        <Ionicons name={c.iconName} size={22} color={c.icon} />
+        <View style={{ flex: 1 }}>
+          <Text style={[styles.title, { color: c.icon }]}>{toast.title}</Text>
+          {!!toast.message && (
+            <Text style={styles.msg} numberOfLines={2}>{toast.message}</Text>
+          )}
+        </View>
+        <TouchableOpacity onPress={() => dismiss(toast.id)} hitSlop={8}>
+          <Ionicons name="close" size={16} color="#64748b" />
+        </TouchableOpacity>
+      </Animated.View>
     </Animated.View>
   );
 }

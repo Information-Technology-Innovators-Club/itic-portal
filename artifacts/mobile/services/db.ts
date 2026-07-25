@@ -121,6 +121,12 @@ function generateMemberId(count: number): string {
   return `ITIC-${year}-${String(count).padStart(4, '0')}`;
 }
 
+function isMissingSchemaFeature(error: { code?: string; message?: string } | null): boolean {
+  return error?.code === 'PGRST204'
+    || error?.message?.includes('Could not find the table') === true
+    || error?.message?.includes("Could not find the '") === true;
+}
+
 // ─── Auth operations ──────────────────────────────────────────────────────────
 
 export async function loginUser(email: string, password: string): Promise<User> {
@@ -206,6 +212,19 @@ export async function checkStudentNumberExists(studentNumber: string): Promise<b
   return !!data;
 }
 
+export async function checkEmailExists(email: string): Promise<boolean> {
+  const normalizedEmail = email.trim().toLowerCase();
+  if (!normalizedEmail) return false;
+
+  const { data, error } = await supabase
+    .from('profiles')
+    .select('id')
+    .eq('email', normalizedEmail)
+    .maybeSingle();
+  if (error) return false;
+  return !!data;
+}
+
 export async function getCurrentUser(): Promise<User | null> {
   const { data: { session } } = await supabase.auth.getSession();
   if (!session) return null;
@@ -248,6 +267,7 @@ export async function approveUser(userId: string): Promise<void> {
   const { error } = await supabase.from('profiles').update({ status: 'active' }).eq('id', userId);
   if (error) throw new Error(error.message);
 }
+
 
 export async function deactivateUser(userId: string): Promise<void> {
   const { error } = await supabase.from('profiles').update({ status: 'inactive' }).eq('id', userId);
@@ -561,7 +581,10 @@ export async function getNotifications(userId: string): Promise<AppNotification[
     .eq('user_id', userId)
     .order('created_at', { ascending: false });
 
-  if (error) return [];
+  if (error) {
+    if (!isMissingSchemaFeature(error)) console.error('Failed to fetch notifications:', error.message);
+    return [];
+  }
   return (data ?? []).map(mapNotification);
 }
 
@@ -581,7 +604,23 @@ export async function createNotification(
     .select()
     .single();
 
-  if (error) throw new Error(error.message);
+  if (error) {
+    if (isMissingSchemaFeature(error)) {
+      // Notifications remain available for this session when the optional
+      // Supabase table has not been added to an existing project yet.
+      return {
+        id: `local-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+        userId: notif.userId,
+        type: notif.type,
+        title: notif.title,
+        body: notif.body,
+        isRead: false,
+        createdAt: new Date().toISOString(),
+        linkTarget: notif.linkTarget,
+      };
+    }
+    throw new Error(error.message);
+  }
   return mapNotification(data);
 }
 
@@ -591,7 +630,7 @@ export async function markNotificationAsRead(id: string): Promise<void> {
     .update({ is_read: true })
     .eq('id', id);
 
-  if (error) throw new Error(error.message);
+  if (error && !isMissingSchemaFeature(error)) throw new Error(error.message);
 }
 
 export async function markAllNotificationsAsRead(userId: string): Promise<void> {
@@ -601,7 +640,7 @@ export async function markAllNotificationsAsRead(userId: string): Promise<void> 
     .eq('user_id', userId)
     .eq('is_read', false);
 
-  if (error) throw new Error(error.message);
+  if (error && !isMissingSchemaFeature(error)) throw new Error(error.message);
 }
 
 export async function deleteNotification(id: string): Promise<void> {
@@ -610,7 +649,7 @@ export async function deleteNotification(id: string): Promise<void> {
     .delete()
     .eq('id', id);
 
-  if (error) throw new Error(error.message);
+  if (error && !isMissingSchemaFeature(error)) throw new Error(error.message);
 }
 
 export async function savePushToken(userId: string, pushToken: string): Promise<void> {
@@ -619,7 +658,7 @@ export async function savePushToken(userId: string, pushToken: string): Promise<
     .update({ push_token: pushToken })
     .eq('id', userId);
 
-  if (error) throw new Error(error.message);
+  if (error && !isMissingSchemaFeature(error)) throw new Error(error.message);
 }
 
 export async function updateNotificationPreferences(
@@ -637,4 +676,3 @@ export async function updateNotificationPreferences(
 
   if (error) throw new Error(error.message);
 }
-

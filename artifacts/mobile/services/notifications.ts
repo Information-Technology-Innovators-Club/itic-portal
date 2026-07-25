@@ -45,17 +45,14 @@ export async function registerForPushNotificationsAsync(userId?: string): Promis
     }
 
     try {
-      // Get Expo Push Token
       const pushTokenData = await Notifications.getExpoPushTokenAsync();
       token = pushTokenData.data;
       console.log('Expo Push Token generated successfully:', token);
-
-      if (userId && token) {
-        await savePushToken(userId, token);
-      }
     } catch (err) {
       console.error('Error fetching Expo push token:', err);
     }
+
+    if (userId && token) await savePushToken(userId, token);
   } else {
     console.log('Push notifications require a physical device or full simulator setup.');
   }

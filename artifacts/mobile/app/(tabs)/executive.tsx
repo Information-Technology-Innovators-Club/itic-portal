@@ -15,7 +15,6 @@ import { useColors } from '@/hooks/useColors';
 import { useAuth } from '@/context/AuthContext';
 import { useToast } from '@/context/ToastContext';
 import * as db from '@/services/db';
-import { apiSendApprovalEmail, apiSendAnnouncementBroadcast, apiSendEventNotification } from '@/services/api';
 import { GlassCard } from '@/components/GlassCard';
 import { StatusBadge, RoleBadge } from '@/components/ui/Badge';
 import { AvatarDisplay } from '@/components/CartoonAvatars';
@@ -437,7 +436,6 @@ export default function ExecutiveScreen() {
           body: 'Your ITIC membership application has been approved! Open the app to view your digital Member ID.',
           linkTarget: '/profile',
         }).catch(() => {});
-        apiSendApprovalEmail(member, 'active', member.role).catch(() => {});
       } else if (action === 'deactivate') {
         await db.deactivateUser(member.id);
       } else {
@@ -529,7 +527,7 @@ export default function ExecutiveScreen() {
         isPinned: annPinned,
       });
 
-      // Broadcast in-app notifications, push alerts, and Resend emails to all active members
+      // Broadcast in-app notifications to all active members.
       db.getAllMembers().then(members => {
         const activeMembers = members.filter(m => m.status === 'active');
         activeMembers.forEach(m => {
@@ -541,7 +539,6 @@ export default function ExecutiveScreen() {
             linkTarget: `/announcement/${newAnn.id}`,
           }).catch(() => {});
         });
-        apiSendAnnouncementBroadcast(activeMembers, newAnn).catch(() => {});
       }).catch(() => {});
 
       showToast('success', 'Announcement published!');
@@ -584,7 +581,6 @@ export default function ExecutiveScreen() {
             linkTarget: `/event/${newEvt.id}`,
           }).catch(() => {});
         });
-        apiSendEventNotification(activeMembers, newEvt).catch(() => {});
       }).catch(() => {});
 
       showToast('success', 'Event created!');

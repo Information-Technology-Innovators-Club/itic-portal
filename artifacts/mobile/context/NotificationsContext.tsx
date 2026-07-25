@@ -7,14 +7,12 @@ import {
   markNotificationAsRead,
   markAllNotificationsAsRead,
   deleteNotification,
-  savePushToken,
 } from '@/services/db';
 import {
   registerForPushNotificationsAsync,
   scheduleLocalNotification,
   setupNotificationListeners,
 } from '@/services/notifications';
-import { apiSendTestNotification, apiSendWelcomeEmail, apiSendApprovalEmail } from '@/services/api';
 import { useRouter } from 'expo-router';
 
 interface NotificationsContextType {
@@ -27,7 +25,6 @@ interface NotificationsContextType {
   markAllAsRead: () => Promise<void>;
   deleteNotif: (id: string) => Promise<void>;
   sendTestPushNotification: () => Promise<void>;
-  sendTestEmailNotification: () => Promise<void>;
 }
 
 const NotificationsContext = createContext<NotificationsContextType | undefined>(undefined);
@@ -38,29 +35,30 @@ export const NotificationsProvider: React.FC<{ children: React.ReactNode }> = ({
   const [notifications, setNotifications] = useState<AppNotification[]>([]);
   const [pushToken, setPushToken] = useState<string | null>(user?.pushToken || null);
   const [isLoading, setIsLoading] = useState<boolean>(false);
+  const userId = user?.id;
 
   const refreshNotifications = useCallback(async () => {
-    if (!user) {
+    if (!userId) {
       setNotifications([]);
       return;
     }
     try {
       setIsLoading(true);
-      const data = await getNotifications(user.id);
+      const data = await getNotifications(userId);
       setNotifications(data);
     } catch (err) {
       console.error('Error fetching notifications:', err);
     } finally {
       setIsLoading(false);
     }
-  }, [user]);
+  }, [userId]);
 
   // Register push token when logged in
   useEffect(() => {
-    if (!user) return;
+    if (!userId) return;
 
     let isMounted = true;
-    registerForPushNotificationsAsync(user.id).then(token => {
+    registerForPushNotificationsAsync(userId).then(token => {
       if (token && isMounted) {
         setPushToken(token);
       }
@@ -79,7 +77,7 @@ export const NotificationsProvider: React.FC<{ children: React.ReactNode }> = ({
       isMounted = false;
       cleanup();
     };
-  }, [user, refreshNotifications, router]);
+  }, [userId, refreshNotifications, router]);
 
   const unreadCount = notifications.filter(n => !n.isRead).length;
 
@@ -132,28 +130,6 @@ export const NotificationsProvider: React.FC<{ children: React.ReactNode }> = ({
 
     setNotifications(prev => [newNotif, ...prev]);
 
-    // Send via backend API if push token exists
-    if (pushToken) {
-      await apiSendTestNotification(undefined, pushToken);
-    }
-  };
-
-  const sendTestEmailNotification = async () => {
-    if (!user || !user.email) return;
-
-    // Send email test via API
-    await apiSendTestNotification(user.email, undefined);
-
-    // Add to in-app notification list
-    const newNotif = await createNotification({
-      userId: user.id,
-      type: 'system',
-      title: '📧 Test Email Sent',
-      body: `A test email has been dispatched via Resend to ${user.email}.`,
-      linkTarget: '/profile',
-    });
-
-    setNotifications(prev => [newNotif, ...prev]);
   };
 
   return (
@@ -168,7 +144,6 @@ export const NotificationsProvider: React.FC<{ children: React.ReactNode }> = ({
         markAllAsRead,
         deleteNotif,
         sendTestPushNotification,
-        sendTestEmailNotification,
       }}
     >
       {children}

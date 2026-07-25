@@ -23,7 +23,6 @@ import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { RegisterFormData } from "@/types";
 import * as db from "@/services/db";
-import { apiSendWelcomeEmail } from "@/services/api";
 import { FACULTIES, DEPARTMENTS } from "@/data/faculties";
 import { EMPTY } from "@/data/RegisterFormData";
 import {
@@ -75,6 +74,7 @@ export default function RegisterScreen() {
   );
   const [isValidatingStudentNumber, setIsValidatingStudentNumber] =
     useState(false);
+  const [isValidatingEmail, setIsValidatingEmail] = useState(false);
 
   useEffect(() => {
     if (!form.studentNumber.trim()) {
@@ -82,10 +82,12 @@ export default function RegisterScreen() {
       return;
     }
 
+    let cancelled = false;
     const timer = setTimeout(async () => {
       setIsValidatingStudentNumber(true);
       try {
         const exists = await db.checkStudentNumberExists(form.studentNumber);
+        if (cancelled) return;
         if (exists) {
           setFieldErrors((prev) => ({
             ...prev,
@@ -95,14 +97,47 @@ export default function RegisterScreen() {
           setFieldErrors((prev) => ({ ...prev, studentNumber: null }));
         }
       } catch (err) {
-        console.error("Error validating student number:", err);
+        if (!cancelled) console.error("Error validating student number:", err);
       } finally {
-        setIsValidatingStudentNumber(false);
+        if (!cancelled) setIsValidatingStudentNumber(false);
       }
     }, 500);
 
-    return () => clearTimeout(timer);
+    return () => {
+      cancelled = true;
+      clearTimeout(timer);
+    };
   }, [form.studentNumber]);
+
+  useEffect(() => {
+    const email = form.email.trim().toLowerCase();
+    if (!email) {
+      setFieldErrors((prev) => ({ ...prev, email: null }));
+      return;
+    }
+
+    let cancelled = false;
+    const timer = setTimeout(async () => {
+      setIsValidatingEmail(true);
+      try {
+        const exists = await db.checkEmailExists(email);
+        if (cancelled) return;
+        setFieldErrors((prev) => ({
+          ...prev,
+          email: exists ? "This email address is already registered" : null,
+        }));
+      } catch (err) {
+        if (!cancelled) console.error("Error validating email:", err);
+      } finally {
+        if (!cancelled) setIsValidatingEmail(false);
+      }
+    }, 500);
+
+    return () => {
+      cancelled = true;
+      clearTimeout(timer);
+    };
+  }, [form.email]);
 
   function set<K extends keyof RegisterFormData>(
     key: K,
@@ -154,6 +189,22 @@ export default function RegisterScreen() {
       }
       if (!form.email.trim() || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email))
         errs.email = "Valid email is required";
+      else if (fieldErrors.email) {
+        errs.email = fieldErrors.email;
+      } else {
+        try {
+          const exists = await db.checkEmailExists(form.email);
+          if (exists) {
+            errs.email = "This email address is already registered";
+            setFieldErrors((prev) => ({
+              ...prev,
+              email: "This email address is already registered",
+            }));
+          }
+        } catch (err) {
+          console.error("Error checking email uniqueness:", err);
+        }
+      }
       if (form.password.length < 6)
         errs.password = "Password must be at least 6 characters";
       const digits = localPhone.replace(/\D/g, "");
@@ -231,10 +282,6 @@ export default function RegisterScreen() {
         body: `Your Member ID is ${user.memberId}. Your application is under executive review.`,
       }).catch((notifyErr) => {
         console.error("Failed to create welcome notification:", notifyErr);
-      });
-
-      apiSendWelcomeEmail(user).catch((emailErr) => {
-        console.error("Failed to send welcome email:", emailErr);
       });
 
       showToast(
@@ -346,6 +393,11 @@ export default function RegisterScreen() {
                 leftIcon="mail-outline"
                 error={fieldErrors.email ?? undefined}
               />
+              {isValidatingEmail && !fieldErrors.email && (
+                <Text style={{ color: colors.mutedForeground, fontSize: 12, marginTop: 4 }}>
+                  Checking email availability…
+                </Text>
+              )}
             </Animated.View>
 
             <Animated.View entering={FadeInDown.delay(160)}>
@@ -640,6 +692,11 @@ export default function RegisterScreen() {
                 icons={TECH_INTEREST_ICONS}
                 colors={colors}
               />
+              {!!fieldErrors.technologyInterests && (
+                <Text style={{ color: colors.destructive, fontSize: 12 }}>
+                  {fieldErrors.technologyInterests}
+                </Text>
+              )}
             </Animated.View>
 
             <Animated.View entering={FadeInDown.delay(80)} style={{ gap: 8 }}>
@@ -725,6 +782,11 @@ export default function RegisterScreen() {
                   );
                 })}
               </View>
+              {!!fieldErrors.experienceLevel && (
+                <Text style={{ color: colors.destructive, fontSize: 12 }}>
+                  {fieldErrors.experienceLevel}
+                </Text>
+              )}
             </Animated.View>
 
             <Animated.View entering={FadeInDown.delay(160)} style={{ gap: 8 }}>
@@ -858,6 +920,11 @@ export default function RegisterScreen() {
                   purposes.
                 </Text>
               </TouchableOpacity>
+              {!!fieldErrors.agreedToTerms && (
+                <Text style={{ color: colors.destructive, fontSize: 12, marginTop: 6 }}>
+                  {fieldErrors.agreedToTerms}
+                </Text>
+              )}
             </Animated.View>
           </Animated.View>
         )}

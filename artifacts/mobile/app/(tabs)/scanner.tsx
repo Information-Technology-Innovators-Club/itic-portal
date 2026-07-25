@@ -11,7 +11,6 @@ import { useColors } from '@/hooks/useColors';
 import { useAuth } from '@/context/AuthContext';
 import { useToast } from '@/context/ToastContext';
 import * as db from '@/services/db';
-import { apiSendAttendanceConfirmation } from '@/services/api';
 import { GlassCard } from '@/components/GlassCard';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
@@ -119,7 +118,6 @@ export default function ScannerScreen() {
           body: `You checked into ${selectedEvent.title}.`,
           linkTarget: `/event/${selectedEvent.id}`,
         }).catch(() => {});
-        apiSendAttendanceConfirmation(member, selectedEvent.title, new Date().toISOString()).catch(() => {});
         showToast('success', 'Attendance marked!', `${member.fullName} checked in to ${selectedEvent.title}`);
       } catch (err: unknown) {
         if (err instanceof Error && err.message.includes('already marked')) {
