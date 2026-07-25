@@ -31,10 +31,25 @@ create table if not exists public.profiles (
   joined_date           timestamptz default now(),
   last_active           timestamptz default now(),
   email_verified        boolean default false,
-  profile_completeness  integer default 0
+  profile_completeness  integer default 0,
+  push_token            text default '',
+  push_enabled          boolean default true,
+  email_enabled         boolean default true
 );
 
--- 2. EVENTS
+-- 2. NOTIFICATIONS
+create table if not exists public.notifications (
+  id           uuid default gen_random_uuid() primary key,
+  user_id      uuid references public.profiles(id) on delete cascade not null,
+  type         text not null check (type in ('event','announcement','attendance','system','approval')),
+  title        text not null,
+  body         text not null,
+  is_read      boolean default false,
+  link_target  text default '',
+  created_at   timestamptz default now()
+);
+
+-- 3. EVENTS
 create table if not exists public.events (
   id             uuid default gen_random_uuid() primary key,
   title          text not null,
@@ -83,9 +98,19 @@ $$;
 
 -- ─── Row Level Security ───────────────────────────────────────────────────────
 alter table public.profiles     enable row level security;
+alter table public.notifications enable row level security;
 alter table public.events        enable row level security;
 alter table public.announcements enable row level security;
 alter table public.attendance    enable row level security;
+
+-- Notifications: members read/update/delete their own notifications; exec/admin can insert/manage
+create policy "notif_read"   on public.notifications for select to authenticated
+  using (user_id = auth.uid() or exists (select 1 from public.profiles p where p.id = auth.uid() and p.role in ('executive','admin')));
+create policy "notif_insert" on public.notifications for insert to authenticated with check (true);
+create policy "notif_update" on public.notifications for update to authenticated
+  using (user_id = auth.uid() or exists (select 1 from public.profiles p where p.id = auth.uid() and p.role in ('executive','admin')));
+create policy "notif_delete" on public.notifications for delete to authenticated
+  using (user_id = auth.uid() or exists (select 1 from public.profiles p where p.id = auth.uid() and p.role in ('executive','admin')));
 
 create policy "profiles_read"   on public.profiles for select using (true);
 create policy "profiles_insert" on public.profiles for insert with check (true);

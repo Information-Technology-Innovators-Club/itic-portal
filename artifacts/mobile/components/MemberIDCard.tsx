@@ -364,7 +364,7 @@ const styles = StyleSheet.create({
     width: 140, height: 140, borderRadius: 70,
     pointerEvents: 'none',
   },
-  circuitOverlay: { ...StyleSheet.absoluteFillObject },
+  circuitOverlay: { ...StyleSheet.absoluteFill },
   circuitLine: { position: 'absolute', backgroundColor: '#ffffff0e', height: 1 },
   circuitDot: { position: 'absolute', width: 4, height: 4, borderRadius: 2 },
 

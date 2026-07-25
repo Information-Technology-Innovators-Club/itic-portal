@@ -1,18 +1,21 @@
 # Learn more https://docs.github.com/en/get-started/getting-started-with-git/ignoring-files
 
 # dependencies
+
 node_modules/
 
 # Expo
+
 .expo/
 dist/
 web-build/
 expo-env.d.ts
 
 # Native
+
 ios/
 android/
-*.orig.*
+_.orig._
 *.jks
 *.p8
 *.p12
@@ -20,24 +23,27 @@ android/
 *.mobileprovision
 
 # Metro
+
 .metro-health-check*
 
 # debug
+
 npm-debug.*
 yarn-debug.*
 yarn-error.*
 
 # macOS
+
 .DS_Store
 *.pem
 
 # local env files
+
 .env*.local
 
 # typescript
+
 *.tsbuildinfo
 .vercel
 
 .env
-itic-e88bf-firebase-adminsdk-fbsvc-87ec9479d8.json
-google-services.json

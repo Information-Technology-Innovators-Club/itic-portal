@@ -12,6 +12,7 @@ import { Stack, useRouter, useSegments } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { AuthProvider, useAuth } from '@/context/AuthContext';
 import { ToastProvider } from '@/context/ToastContext';
+import { NotificationsProvider } from '@/context/NotificationsContext';
 import { ToastContainer } from '@/components/Toast';
 
 SplashScreen.preventAutoHideAsync();
@@ -75,7 +76,9 @@ export default function RootLayout() {
             <KeyboardProvider>
               <ToastProvider>
                 <AuthProvider>
-                  <RootLayoutNav />
+                  <NotificationsProvider>
+                    <RootLayoutNav />
+                  </NotificationsProvider>
                 </AuthProvider>
               </ToastProvider>
             </KeyboardProvider>

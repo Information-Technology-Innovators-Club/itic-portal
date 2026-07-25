@@ -5,7 +5,7 @@
 import { supabase } from './supabase';
 import {
   User, Announcement, Event, AttendanceRecord, RegisterFormData,
-  MemberStatus, UserRole, Gender, ExperienceLevel,
+  MemberStatus, UserRole, Gender, ExperienceLevel, AppNotification, NotificationType,
 } from '@/types';
 
 // ─── Mapping helpers ──────────────────────────────────────────────────────────
@@ -40,6 +40,22 @@ function mapProfile(r: Record<string, unknown>): User {
     lastActive: (r.last_active as string) ?? new Date().toISOString(),
     emailVerified: (r.email_verified as boolean) ?? false,
     profileCompleteness: (r.profile_completeness as number) ?? 0,
+    pushToken: (r.push_token as string) ?? '',
+    pushEnabled: (r.push_enabled as boolean) ?? true,
+    emailEnabled: (r.email_enabled as boolean) ?? true,
+  };
+}
+
+function mapNotification(r: Record<string, unknown>): AppNotification {
+  return {
+    id: r.id as string,
+    userId: r.user_id as string,
+    type: (r.type as NotificationType) ?? 'system',
+    title: r.title as string,
+    body: r.body as string,
+    isRead: (r.is_read as boolean) ?? false,
+    createdAt: r.created_at as string,
+    linkTarget: (r.link_target as string) ?? '',
   };
 }
 
@@ -535,3 +551,90 @@ export async function getRecentActivityFeed(limit = 10): Promise<
     };
   });
 }
+
+// ─── Notifications & Push Tokens ──────────────────────────────────────────────
+
+export async function getNotifications(userId: string): Promise<AppNotification[]> {
+  const { data, error } = await supabase
+    .from('notifications')
+    .select('*')
+    .eq('user_id', userId)
+    .order('created_at', { ascending: false });
+
+  if (error) return [];
+  return (data ?? []).map(mapNotification);
+}
+
+export async function createNotification(
+  notif: Omit<AppNotification, 'id' | 'createdAt' | 'isRead'>
+): Promise<AppNotification> {
+  const { data, error } = await supabase
+    .from('notifications')
+    .insert({
+      user_id: notif.userId,
+      type: notif.type,
+      title: notif.title,
+      body: notif.body,
+      link_target: notif.linkTarget ?? '',
+      is_read: false,
+    })
+    .select()
+    .single();
+
+  if (error) throw new Error(error.message);
+  return mapNotification(data);
+}
+
+export async function markNotificationAsRead(id: string): Promise<void> {
+  const { error } = await supabase
+    .from('notifications')
+    .update({ is_read: true })
+    .eq('id', id);
+
+  if (error) throw new Error(error.message);
+}
+
+export async function markAllNotificationsAsRead(userId: string): Promise<void> {
+  const { error } = await supabase
+    .from('notifications')
+    .update({ is_read: true })
+    .eq('user_id', userId)
+    .eq('is_read', false);
+
+  if (error) throw new Error(error.message);
+}
+
+export async function deleteNotification(id: string): Promise<void> {
+  const { error } = await supabase
+    .from('notifications')
+    .delete()
+    .eq('id', id);
+
+  if (error) throw new Error(error.message);
+}
+
+export async function savePushToken(userId: string, pushToken: string): Promise<void> {
+  const { error } = await supabase
+    .from('profiles')
+    .update({ push_token: pushToken })
+    .eq('id', userId);
+
+  if (error) throw new Error(error.message);
+}
+
+export async function updateNotificationPreferences(
+  userId: string,
+  prefs: { pushEnabled?: boolean; emailEnabled?: boolean }
+): Promise<void> {
+  const updates: Record<string, unknown> = {};
+  if (prefs.pushEnabled !== undefined) updates.push_enabled = prefs.pushEnabled;
+  if (prefs.emailEnabled !== undefined) updates.email_enabled = prefs.emailEnabled;
+
+  const { error } = await supabase
+    .from('profiles')
+    .update(updates)
+    .eq('id', userId);
+
+  if (error) throw new Error(error.message);
+}
+

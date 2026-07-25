@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator, Alert, Animated as RNAnimated, Platform, Pressable,
-  ScrollView, StyleSheet, Text, TouchableOpacity, View, Linking, Modal,
+  ScrollView, StyleSheet, Text, TouchableOpacity, View, Linking, Modal, Switch,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Animated, { FadeInDown, FadeInUp } from 'react-native-reanimated';
@@ -12,6 +12,7 @@ import * as ImagePicker from 'expo-image-picker';
 import { useColors } from '@/hooks/useColors';
 import { useAuth } from '@/context/AuthContext';
 import { useToast } from '@/context/ToastContext';
+import { useNotifications } from '@/context/NotificationsContext';
 import * as db from '@/services/db';
 import { GlassCard } from '@/components/GlassCard';
 import { MemberIDCard } from '@/components/MemberIDCard';
@@ -166,6 +167,43 @@ export default function ProfileScreen() {
   const [updatingAvatar, setUpdatingAvatar] = useState(false);
   const [showAll, setShowAll] = useState(false);
   const topPad = Platform.OS === 'web' ? 24 : insets.top;
+
+  const { sendTestPushNotification, sendTestEmailNotification } = useNotifications();
+  const [pushEnabled, setPushEnabled] = useState(user?.pushEnabled ?? true);
+  const [emailEnabled, setEmailEnabled] = useState(user?.emailEnabled ?? true);
+
+  useEffect(() => {
+    if (user) {
+      if (user.pushEnabled !== undefined) setPushEnabled(user.pushEnabled);
+      if (user.emailEnabled !== undefined) setEmailEnabled(user.emailEnabled);
+    }
+  }, [user]);
+
+  const togglePush = async (val: boolean) => {
+    if (!user) return;
+    setPushEnabled(val);
+    try {
+      await db.updateNotificationPreferences(user.id, { pushEnabled: val });
+      await refreshUser();
+      showToast('success', val ? 'Push Notifications Enabled' : 'Push Notifications Disabled');
+    } catch {
+      setPushEnabled(!val);
+      showToast('error', 'Failed to update push preference');
+    }
+  };
+
+  const toggleEmail = async (val: boolean) => {
+    if (!user) return;
+    setEmailEnabled(val);
+    try {
+      await db.updateNotificationPreferences(user.id, { emailEnabled: val });
+      await refreshUser();
+      showToast('success', val ? 'Email Notifications Enabled' : 'Email Notifications Disabled');
+    } catch {
+      setEmailEnabled(!val);
+      showToast('error', 'Failed to update email preference');
+    }
+  };
 
   useEffect(() => {
     if (!user) { setLoading(false); return; }
@@ -445,6 +483,73 @@ export default function ProfileScreen() {
               </View>
             </View>
           )}
+        </GlassCard>
+      </Animated.View>
+
+      {/* ── Notification Preferences ─────────────────────────────────── */}
+      <Animated.View entering={FadeInUp.delay(200).springify()} style={{ paddingHorizontal: 16 }}>
+        <GlassCard style={{ gap: 14 }}>
+          <SH icon="notifications-outline" label="Notification Settings" accent="#6366f1" />
+          
+          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+            <View style={{ flex: 1, marginRight: 12 }}>
+              <Text style={{ color: colors.foreground, fontSize: 14, fontWeight: '600' }}>Push Notifications</Text>
+              <Text style={{ color: colors.mutedForeground, fontSize: 12, marginTop: 2 }}>Receive live push alerts on your mobile device</Text>
+            </View>
+            <Switch
+              value={pushEnabled}
+              onValueChange={togglePush}
+              trackColor={{ false: '#334155', true: '#6366f1' }}
+              thumbColor="#ffffff"
+            />
+          </View>
+
+          <View style={{ height: 1, backgroundColor: colors.border }} />
+
+          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+            <View style={{ flex: 1, marginRight: 12 }}>
+              <Text style={{ color: colors.foreground, fontSize: 14, fontWeight: '600' }}>Email Notifications (Resend)</Text>
+              <Text style={{ color: colors.mutedForeground, fontSize: 12, marginTop: 2 }}>Get event announcements & check-in receipts via email</Text>
+            </View>
+            <Switch
+              value={emailEnabled}
+              onValueChange={toggleEmail}
+              trackColor={{ false: '#334155', true: '#6366f1' }}
+              thumbColor="#ffffff"
+            />
+          </View>
+
+          <View style={{ height: 1, backgroundColor: colors.border }} />
+
+          {/* Test Buttons */}
+          <View style={{ gap: 8, paddingTop: 4 }}>
+            <Text style={[styles.subLabel, { color: colors.mutedForeground }]}>Test System Connections</Text>
+            <View style={{ flexDirection: 'row', gap: 10 }}>
+              <TouchableOpacity
+                onPress={async () => {
+                  await sendTestPushNotification();
+                  showToast('info', 'Test Push Dispatched', 'Check your device for push alert.');
+                }}
+                activeOpacity={0.75}
+                style={[styles.socialBtn, { flex: 1, backgroundColor: '#6366f115', borderColor: '#6366f130' }]}
+              >
+                <Ionicons name="phone-portrait-outline" size={15} color="#818cf8" />
+                <Text style={[styles.socialBtnText, { color: '#818cf8' }]}>Test Push</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                onPress={async () => {
+                  await sendTestEmailNotification();
+                  showToast('info', 'Test Email Sent', 'Check your inbox for Resend email.');
+                }}
+                activeOpacity={0.75}
+                style={[styles.socialBtn, { flex: 1, backgroundColor: '#10b98115', borderColor: '#10b98130' }]}
+              >
+                <Ionicons name="mail-outline" size={15} color="#34d399" />
+                <Text style={[styles.socialBtnText, { color: '#34d399' }]}>Test Email</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
         </GlassCard>
       </Animated.View>
 

@@ -15,6 +15,7 @@ import { useColors } from '@/hooks/useColors';
 import { useAuth } from '@/context/AuthContext';
 import { useToast } from '@/context/ToastContext';
 import * as db from '@/services/db';
+import { apiSendApprovalEmail, apiSendAnnouncementBroadcast, apiSendEventNotification } from '@/services/api';
 import { GlassCard } from '@/components/GlassCard';
 import { StatusBadge, RoleBadge } from '@/components/ui/Badge';
 import { AvatarDisplay } from '@/components/CartoonAvatars';
@@ -427,9 +428,21 @@ export default function ExecutiveScreen() {
 
     const doAction = async () => {
       await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-      if (action === 'approve') await db.approveUser(member.id);
-      else if (action === 'deactivate') await db.deactivateUser(member.id);
-      else await db.suspendUser(member.id);
+      if (action === 'approve') {
+        await db.approveUser(member.id);
+        db.createNotification({
+          userId: member.id,
+          type: 'approval',
+          title: '🎉 Membership Approved!',
+          body: 'Your ITIC membership application has been approved! Open the app to view your digital Member ID.',
+          linkTarget: '/profile',
+        }).catch(() => {});
+        apiSendApprovalEmail(member, 'active', member.role).catch(() => {});
+      } else if (action === 'deactivate') {
+        await db.deactivateUser(member.id);
+      } else {
+        await db.suspendUser(member.id);
+      }
       showToast('success', `${labels[action]} successful`);
     };
 
@@ -507,7 +520,7 @@ export default function ExecutiveScreen() {
     }
     setAnnLoading(true);
     try {
-      await db.addAnnouncement({
+      const newAnn = await db.addAnnouncement({
         title: annTitle.trim(),
         content: annContent.trim(),
         category: annCat,
@@ -515,6 +528,22 @@ export default function ExecutiveScreen() {
         authorName: user!.fullName,
         isPinned: annPinned,
       });
+
+      // Broadcast in-app notifications, push alerts, and Resend emails to all active members
+      db.getAllMembers().then(members => {
+        const activeMembers = members.filter(m => m.status === 'active');
+        activeMembers.forEach(m => {
+          db.createNotification({
+            userId: m.id,
+            type: 'announcement',
+            title: `📢 ${newAnn.title}`,
+            body: newAnn.content.substring(0, 100),
+            linkTarget: `/announcement/${newAnn.id}`,
+          }).catch(() => {});
+        });
+        apiSendAnnouncementBroadcast(activeMembers, newAnn).catch(() => {});
+      }).catch(() => {});
+
       showToast('success', 'Announcement published!');
       setAnnModal(false);
       setAnnTitle(''); setAnnContent(''); setAnnCat('general'); setAnnPinned(false);
@@ -530,7 +559,7 @@ export default function ExecutiveScreen() {
     }
     setEvtLoading(true);
     try {
-      await db.addEvent({
+      const newEvt = await db.addEvent({
         title: evtTitle.trim(),
         description: evtDesc.trim(),
         date: evtDate.trim(),
@@ -542,6 +571,22 @@ export default function ExecutiveScreen() {
         organizerId: user!.id,
         tags: [],
       });
+
+      // Broadcast event notification
+      db.getAllMembers().then(members => {
+        const activeMembers = members.filter(m => m.status === 'active');
+        activeMembers.forEach(m => {
+          db.createNotification({
+            userId: m.id,
+            type: 'event',
+            title: `🗓️ ${newEvt.title}`,
+            body: `New event on ${newEvt.date} at ${newEvt.venue || 'ITIC'}. Tap to view details.`,
+            linkTarget: `/event/${newEvt.id}`,
+          }).catch(() => {});
+        });
+        apiSendEventNotification(activeMembers, newEvt).catch(() => {});
+      }).catch(() => {});
+
       showToast('success', 'Event created!');
       setEvtModal(false);
       setEvtTitle(''); setEvtDesc(''); setEvtDate(''); setEvtTime(''); setEvtVenue(''); setEvtMax('100');

@@ -27,6 +27,7 @@ import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { RegisterFormData, Gender, ExperienceLevel } from "@/types";
 import * as db from "@/services/db";
+import { apiSendWelcomeEmail } from "@/services/api";
 
 const STEPS = [
   {
@@ -1371,6 +1372,13 @@ export default function RegisterScreen() {
     try {
       const user = await register(form);
       await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      db.createNotification({
+        userId: user.id,
+        type: 'system',
+        title: '🎉 Welcome to ITIC!',
+        body: `Your Member ID is ${user.memberId}. Your application is under executive review.`,
+      }).catch(() => {});
+      apiSendWelcomeEmail(user).catch(() => {});
       showToast(
         "success",
         "Registration successful!",

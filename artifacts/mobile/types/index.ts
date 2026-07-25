@@ -36,7 +36,10 @@ export interface User {
   emailVerified: boolean;
   profileCompleteness: number;
   /** Title shown for executives/admins, e.g. "President", "Secretary" */
-  executiveTitle: string;
+  executiveTitle?: string;
+  pushToken?: string;
+  pushEnabled?: boolean;
+  emailEnabled?: boolean;
 }
 
 export type NotificationType = 'event' | 'announcement' | 'attendance' | 'system' | 'approval';

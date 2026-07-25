@@ -21,6 +21,8 @@ import { EventCard } from '@/components/EventCard';
 import { MemberIDCard } from '@/components/MemberIDCard';
 import { Announcement, Event, AttendanceRecord } from '@/types';
 import { AvatarDisplay } from '@/components/CartoonAvatars';
+import { useNotifications } from '@/context/NotificationsContext';
+import { NotificationsModal } from '@/components/NotificationsModal';
 import {
   XPBar, StreakWidget, BadgeRow,
   calcXP, calcStreak, calcBadges,
@@ -134,6 +136,9 @@ export default function HomeScreen() {
   const [scannerVisible, setScannerVisible] = useState(false);
   const [checkingIn, setCheckingIn] = useState(false);
   const channelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
+
+  const { unreadCount } = useNotifications();
+  const [notifModalVisible, setNotifModalVisible] = useState(false);
 
   // Gamification state (members only)
   const [myAttendance, setMyAttendance] = useState<AttendanceRecord[]>([]);
@@ -262,14 +267,27 @@ export default function HomeScreen() {
             <Text style={[styles.greeting, { color: colors.mutedForeground }]}>{timeGreeting()} 👋</Text>
             <Text style={[styles.greetName, { color: colors.foreground }]}>{user?.fullName?.split(' ')[0] ?? 'Member'}</Text>
           </View>
-          <TouchableOpacity onPress={() => router.push('/(tabs)/profile')} style={styles.greetAvatar}>
-            <AvatarDisplay
-              profilePicture={user?.profilePicture}
-              size={44}
-              initials={initials}
-              primaryColor={colors.primary}
-            />
-          </TouchableOpacity>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+            <TouchableOpacity
+              onPress={() => setNotifModalVisible(true)}
+              style={[styles.bellBtn, { backgroundColor: colors.muted, borderColor: colors.border }]}
+            >
+              <Ionicons name="notifications-outline" size={22} color={colors.foreground} />
+              {unreadCount > 0 && (
+                <View style={styles.bellBadge}>
+                  <Text style={styles.bellBadgeText}>{unreadCount > 99 ? '99+' : unreadCount}</Text>
+                </View>
+              )}
+            </TouchableOpacity>
+            <TouchableOpacity onPress={() => router.push('/(tabs)/profile')} style={styles.greetAvatar}>
+              <AvatarDisplay
+                profilePicture={user?.profilePicture}
+                size={44}
+                initials={initials}
+                primaryColor={colors.primary}
+              />
+            </TouchableOpacity>
+          </View>
         </Animated.View>
 
         {/* Pending notice */}
@@ -454,6 +472,8 @@ export default function HomeScreen() {
             </Animated.View>
           </Pressable>
         </Modal>
+
+        <NotificationsModal visible={notifModalVisible} onClose={() => setNotifModalVisible(false)} />
       </ScrollView>
     );
   }
@@ -481,14 +501,27 @@ export default function HomeScreen() {
                 <RoleBadge role={user!.role} />
               </View>
             </View>
-            <TouchableOpacity onPress={() => router.push('/(tabs)/profile')} style={styles.greetAvatar}>
-              <AvatarDisplay
-                profilePicture={user?.profilePicture}
-                size={44}
-                initials={initials}
-                primaryColor={colors.primary}
-              />
-            </TouchableOpacity>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+              <TouchableOpacity
+                onPress={() => setNotifModalVisible(true)}
+                style={[styles.bellBtn, { backgroundColor: colors.card, borderColor: colors.border }]}
+              >
+                <Ionicons name="notifications-outline" size={22} color={colors.foreground} />
+                {unreadCount > 0 && (
+                  <View style={styles.bellBadge}>
+                    <Text style={styles.bellBadgeText}>{unreadCount > 99 ? '99+' : unreadCount}</Text>
+                  </View>
+                )}
+              </TouchableOpacity>
+              <TouchableOpacity onPress={() => router.push('/(tabs)/profile')} style={styles.greetAvatar}>
+                <AvatarDisplay
+                  profilePicture={user?.profilePicture}
+                  size={44}
+                  initials={initials}
+                  primaryColor={colors.primary}
+                />
+              </TouchableOpacity>
+            </View>
           </View>
         </LinearGradient>
       </Animated.View>
@@ -615,6 +648,8 @@ export default function HomeScreen() {
           ))}
         </Animated.View>
       )}
+
+      <NotificationsModal visible={notifModalVisible} onClose={() => setNotifModalVisible(false)} />
     </ScrollView>
   );
 }
@@ -626,6 +661,32 @@ const styles = StyleSheet.create({
   greeting: { fontSize: 14, fontFamily: 'Inter_400Regular' },
   greetName: { fontSize: 26, fontFamily: 'Inter_700Bold', letterSpacing: -0.5 },
   greetAvatar: { width: 52, height: 52, borderRadius: 16, overflow: 'hidden' },
+  bellBtn: {
+    width: 44,
+    height: 44,
+    borderRadius: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    position: 'relative',
+  },
+  bellBadge: {
+    position: 'absolute',
+    top: 4,
+    right: 4,
+    backgroundColor: '#ef4444',
+    borderRadius: 8,
+    minWidth: 16,
+    height: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 3,
+  },
+  bellBadgeText: {
+    color: '#ffffff',
+    fontSize: 9,
+    fontFamily: 'Inter_700Bold',
+  },
   // greetAvatarImg/Grad/Text removed — AvatarDisplay handles internally
   execHero: { borderRadius: 20, padding: 16, paddingBottom: 20 },
   statsRow: { flexDirection: 'row', gap: 8 },
