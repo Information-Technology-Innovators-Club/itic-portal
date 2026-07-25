@@ -5,7 +5,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { Text, View, TouchableOpacity } from "react-native";
 
 // ─── Semester toggle: two large side-by-side cards ─────────────
-function SemesterToggle({
+export function SemesterToggle({
   value,
   onSelect,
   colors,

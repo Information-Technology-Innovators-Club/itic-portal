@@ -42,76 +42,19 @@ import {
 } from "@/data/steps";
 import { SectionHeader } from "@/components/auth/SectionHeader";
 import { styles } from "@/constants/styles";
+import { IconPillSelect } from "@/components/auth/conPillSelect";
+import { PillSelect } from "@/components/auth/PillSelect";
+import { DobPicker } from "@/components/DobPicker";
+import { FacultyCard } from "@/components/FacultyCard";
+import { getPasswordStrength } from "@/components/GetPasswordStrength";
+import { LevelMeter } from "@/components/LevelMeter";
+import { PhoneInput } from "@/components/PhoneInput";
+import { SemesterToggle } from "@/components/SemesterToggle";
+import { StepTracker } from "@/components/StepTracker";
+import { shade } from "@/constants/shade";
 
 const FACULTIES_ROW1 = FACULTIES.filter((_, idx) => idx % 2 === 0);
 const FACULTIES_ROW2 = FACULTIES.filter((_, idx) => idx % 2 !== 0);
-
-// ─── Step tracker: icon circles connected by an animated line ─
-function StepTracker({
-  step,
-  colors,
-}: {
-  step: number;
-  colors: ReturnType<typeof useColors>;
-}) {
-  return (
-    <View style={styles.trackerRow}>
-      {STEPS.map((s, i) => {
-        const done = i < step;
-        const active = i === step;
-        return (
-          <React.Fragment key={s.key}>
-            <View style={styles.trackerNode}>
-              <View
-                style={[
-                  styles.trackerCircle,
-                  done && { backgroundColor: "#fff" },
-                  active && styles.trackerCircleActive,
-                  !done && !active && styles.trackerCircleIdle,
-                ]}
-              >
-                {done ? (
-                  <Ionicons name="checkmark" size={14} color={colors.primary} />
-                ) : (
-                  <Ionicons
-                    name={s.icon}
-                    size={14}
-                    color={active ? colors.primary : "rgba(255,255,255,0.75)"}
-                  />
-                )}
-              </View>
-              <Text
-                numberOfLines={1}
-                style={[
-                  styles.trackerLabel,
-                  {
-                    color: active || done ? "#fff" : "rgba(255,255,255,0.65)",
-                    fontFamily: active ? "Inter_700Bold" : "Inter_500Medium",
-                  },
-                ]}
-              >
-                {s.label}
-              </Text>
-            </View>
-            {i < STEPS.length - 1 && (
-              <View style={styles.trackerLineWrap}>
-                <View
-                  style={[
-                    styles.trackerLine,
-                    {
-                      backgroundColor:
-                        i < step ? "#fff" : "rgba(255,255,255,0.3)",
-                    },
-                  ]}
-                />
-              </View>
-            )}
-          </React.Fragment>
-        );
-      })}
-    </View>
-  );
-}
 
 export default function RegisterScreen() {
   const colors = useColors();
@@ -1058,15 +1001,4 @@ function ReviewSection({
       ))}
     </View>
   );
-}
-
-// Darkens/lightens a hex color by `percent` (-100..100) for the gradient's second stop
-function shade(hex: string, percent: number): string {
-  const num = parseInt(hex.replace("#", ""), 16);
-  if (Number.isNaN(num)) return hex;
-  const amt = Math.round(2.55 * percent);
-  const r = Math.min(255, Math.max(0, (num >> 16) + amt));
-  const g = Math.min(255, Math.max(0, ((num >> 8) & 0x00ff) + amt));
-  const b = Math.min(255, Math.max(0, (num & 0x0000ff) + amt));
-  return `#${(0x1000000 + r * 0x10000 + g * 0x100 + b).toString(16).slice(1)}`;
 }
