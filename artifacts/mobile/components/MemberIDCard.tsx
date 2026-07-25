@@ -105,6 +105,9 @@ export function MemberIDCard({ user }: Props) {
   const initials = user.fullName
     ? user.fullName.split(' ').map(n => n[0]).slice(0, 2).join('').toUpperCase()
     : 'IT';
+  // A card should always have a proper portrait. The selected image/cartoon is
+  // used when available; new members get a neutral default instead of initials.
+  const avatarSource = user.profilePicture?.trim() || 'cartoon:1';
 
   function flip() {
     const target = flipped ? 0 : 1;
@@ -202,8 +205,8 @@ export function MemberIDCard({ user }: Props) {
                 {/* Avatar */}
                 <View style={[styles.cardAvatar, { borderColor: theme.accent + '60' }]}>
                   <AvatarDisplay
-                    profilePicture={user.profilePicture}
-                    size={40}
+                    profilePicture={avatarSource}
+                    size={54}
                     initials={initials}
                     primaryColor={theme.accent}
                     static
@@ -218,11 +221,17 @@ export function MemberIDCard({ user }: Props) {
                     {user.faculty.replace('Faculty of ', '')}
                   </Text>
                   <View style={styles.statusRow}>
-                    <View style={[styles.statusDot, {
-                      backgroundColor: user.status === 'active' ? '#22c55e' : '#f59e0b',
-                      shadowColor: user.status === 'active' ? '#22c55e' : '#f59e0b',
-                    }]} />
-                    <Text style={styles.statusText}>{user.status.toUpperCase()}</Text>
+                    <View style={[
+                      styles.statusPill,
+                      { backgroundColor: user.status === 'active' ? '#22c55e22' : '#f59e0b22' },
+                    ]}>
+                      <Text style={[
+                        styles.statusText,
+                        { color: user.status === 'active' ? '#86efac' : '#fcd34d' },
+                      ]}>
+                        {user.status.toUpperCase()}
+                      </Text>
+                    </View>
                   </View>
                 </View>
               </View>
@@ -273,8 +282,8 @@ export function MemberIDCard({ user }: Props) {
               {/* Mini avatar on back header */}
               <View style={styles.backAvatarMini}>
                   <AvatarDisplay
-                    profilePicture={user.profilePicture}
-                    size={22}
+                    profilePicture={avatarSource}
+                    size={28}
                   initials={initials}
                   primaryColor={theme.accent}
                   static
@@ -390,24 +399,15 @@ const styles = StyleSheet.create({
 
   // Avatar on card front
   cardAvatar: {
-    width: 40, height: 40, borderRadius: 11,
-    borderWidth: 1.5, overflow: 'hidden', flexShrink: 0,
+    width: 54, height: 54, borderRadius: 27,
+    borderWidth: 2, overflow: 'hidden', flexShrink: 0,
   },
   cardAvatarImg: { width: '100%', height: '100%', resizeMode: 'cover' },
-  cardAvatarFallback: {
-    width: 40, height: 40, borderRadius: 11,
-    borderWidth: 1.5, alignItems: 'center', justifyContent: 'center', flexShrink: 0,
-  },
-  cardAvatarText: { fontSize: 14, fontFamily: 'Inter_700Bold' },
-
   cardName: { fontSize: 15, fontFamily: 'Inter_700Bold', color: '#f8fafc', letterSpacing: -0.3 },
   cardMemberId: { fontSize: 11, fontFamily: 'Inter_600SemiBold', letterSpacing: 0.6 },
   cardSub: { fontSize: 9, fontFamily: 'Inter_400Regular', color: '#94a3b8' },
-  statusRow: { flexDirection: 'row', alignItems: 'center', gap: 5, marginTop: 4 },
-  statusDot: {
-    width: 6, height: 6, borderRadius: 3,
-    shadowOffset: { width: 0, height: 0 }, shadowRadius: 4, shadowOpacity: 0.9, elevation: 2,
-  },
+  statusRow: { flexDirection: 'row', alignItems: 'center', marginTop: 4 },
+  statusPill: { paddingHorizontal: 6, paddingVertical: 2, borderRadius: 8 },
   statusText: { fontSize: 8, fontFamily: 'Inter_700Bold', color: '#cbd5e1', letterSpacing: 1 },
 
   // QR
@@ -435,7 +435,7 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1, borderBottomColor: '#ffffff20',
   },
   backAvatarMini: {
-    width: 22, height: 22, borderRadius: 7,
+    width: 28, height: 28, borderRadius: 14,
     overflow: 'hidden', borderWidth: 1, borderColor: '#ffffff30',
   },
   backAvatarMiniImg: { width: '100%', height: '100%', resizeMode: 'cover' },
