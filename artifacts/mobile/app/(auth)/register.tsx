@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import {
   KeyboardAvoidingView,
   Platform,
@@ -24,8 +24,7 @@ import { Input } from "@/components/ui/Input";
 import { RegisterFormData } from "@/types";
 import * as db from "@/services/db";
 import { apiSendWelcomeEmail } from "@/services/api";
-import { LEVELS } from "@/components/Gamification";
-import { FACULTIES, FACULTY_ICONS, DEPARTMENTS } from "@/data/faculties";
+import { FACULTIES, DEPARTMENTS } from "@/data/faculties";
 import { EMPTY } from "@/data/RegisterFormData";
 import {
   Country,
@@ -34,7 +33,6 @@ import {
   GENDERS,
   LANGUAGE_ICONS,
   LANGUAGES,
-  SEMESTERS,
   STEPS,
   TECH_INTEREST_ICONS,
   TECH_INTERESTS,
@@ -44,7 +42,7 @@ import { SectionHeader } from "@/components/auth/SectionHeader";
 import { styles } from "@/constants/styles";
 import { IconPillSelect } from "@/components/auth/conPillSelect";
 import { PillSelect } from "@/components/auth/PillSelect";
-import { DobPicker } from "@/components/DobPicker";
+import { DobPicker, formatDate } from "@/components/DobPicker";
 import { FacultyCard } from "@/components/FacultyCard";
 import { getPasswordStrength } from "@/components/GetPasswordStrength";
 import { LevelMeter } from "@/components/LevelMeter";
@@ -52,6 +50,8 @@ import { PhoneInput } from "@/components/PhoneInput";
 import { SemesterToggle } from "@/components/SemesterToggle";
 import { StepTracker } from "@/components/StepTracker";
 import { shade } from "@/constants/shade";
+import { useRef } from "react";
+import { ReviewSection } from "@/components/auth/ReviewSection";
 
 const FACULTIES_ROW1 = FACULTIES.filter((_, idx) => idx % 2 === 0);
 const FACULTIES_ROW2 = FACULTIES.filter((_, idx) => idx % 2 !== 0);
@@ -61,7 +61,8 @@ export default function RegisterScreen() {
   const { register } = useAuth();
   const { showToast } = useToast();
   const router = useRouter();
-
+  const isSubmittingRef = useRef(false);
+  const isMountedRef = useRef(true);
   const [step, setStep] = useState(0);
   const [form, setForm] = useState<RegisterFormData>(EMPTY);
   const [loading, setLoading] = useState(false);
@@ -195,29 +196,47 @@ export default function RegisterScreen() {
     return firstKey ? (errs[firstKey] ?? null) : null;
   }
 
+  useEffect(() => {
+    return () => {
+      isMountedRef.current = false;
+    };
+  }, []);
+
   async function handleNext() {
-    const err = await validate();
-    if (err) {
-      await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
-      showToast("warning", "Missing information", err);
-      return;
-    }
-    if (step < TOTAL - 1) {
-      await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-      setStep((s) => s + 1);
-      return;
-    }
+    if (isSubmittingRef.current) return; // guard against double-tap
+    isSubmittingRef.current = true;
     setLoading(true);
+
     try {
+      const validationError = await validate();
+      if (validationError) {
+        await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+        showToast("warning", "Missing information", validationError);
+        return;
+      }
+
+      if (step < TOTAL - 1) {
+        await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+        setStep((s) => s + 1);
+        return;
+      }
+
       const user = await register(form);
       await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+
       db.createNotification({
         userId: user.id,
         type: "system",
         title: "🎉 Welcome to ITIC!",
         body: `Your Member ID is ${user.memberId}. Your application is under executive review.`,
-      }).catch(() => {});
-      apiSendWelcomeEmail(user).catch(() => {});
+      }).catch((notifyErr) => {
+        console.error("Failed to create welcome notification:", notifyErr);
+      });
+
+      apiSendWelcomeEmail(user).catch((emailErr) => {
+        console.error("Failed to send welcome email:", emailErr);
+      });
+
       showToast(
         "success",
         "Registration successful!",
@@ -227,16 +246,21 @@ export default function RegisterScreen() {
         pathname: "/(auth)/verify-email",
         params: { memberId: user.memberId },
       });
-    } catch (err: unknown) {
-      console.error("Registration submission failed error:", err);
-      const msg = err instanceof Error ? err.message : "Registration failed.";
+    } catch (submitError: unknown) {
+      console.error("Registration submission failed:", submitError);
+      const msg =
+        submitError instanceof Error
+          ? submitError.message
+          : "Registration failed.";
       await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
       showToast("error", "Registration failed", msg);
     } finally {
-      setLoading(false);
+      isSubmittingRef.current = false;
+      if (isMountedRef.current) {
+        setLoading(false);
+      }
     }
   }
-
   const depts = form.faculty ? (DEPARTMENTS[form.faculty] ?? []) : [];
 
   return (
@@ -950,55 +974,5 @@ export default function RegisterScreen() {
         )}
       </View>
     </KeyboardAvoidingView>
-  );
-}
-
-function ReviewSection({
-  title,
-  icon,
-  rows,
-  onEdit,
-  colors,
-}: {
-  title: string;
-  icon: keyof typeof Ionicons.glyphMap;
-  rows: [string, string][];
-  onEdit: () => void;
-  colors: ReturnType<typeof useColors>;
-}) {
-  return (
-    <View
-      style={[
-        styles.reviewCard,
-        { backgroundColor: colors.muted, borderColor: colors.border },
-      ]}
-    >
-      <View style={styles.reviewCardHead}>
-        <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
-          <Ionicons name={icon} size={16} color={colors.primary} />
-          <Text style={[styles.reviewCardTitle, { color: colors.foreground }]}>
-            {title}
-          </Text>
-        </View>
-        <TouchableOpacity onPress={onEdit} hitSlop={8}>
-          <Text style={[styles.reviewEdit, { color: colors.primary }]}>
-            Edit
-          </Text>
-        </TouchableOpacity>
-      </View>
-      {rows.map(([label, value]) => (
-        <View key={label} style={styles.reviewRow}>
-          <Text style={[styles.reviewLabel, { color: colors.mutedForeground }]}>
-            {label}
-          </Text>
-          <Text
-            style={[styles.reviewValue, { color: colors.foreground }]}
-            numberOfLines={1}
-          >
-            {value || "—"}
-          </Text>
-        </View>
-      ))}
-    </View>
   );
 }

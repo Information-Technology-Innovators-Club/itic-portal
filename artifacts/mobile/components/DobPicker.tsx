@@ -11,7 +11,7 @@ import { View, TouchableOpacity, Modal, Button, Text } from "react-native";
 import { daysInMonth, WheelColumn } from "./WheelColumn";
 import * as Haptics from "expo-haptics";
 
-function formatDate(d: Date) {
+export function formatDate(d: Date) {
   return d.toLocaleDateString(undefined, {
     year: "numeric",
     month: "long",
